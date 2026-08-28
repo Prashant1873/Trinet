@@ -228,6 +228,114 @@ def get_company_detail(company_id):
 # FACILITIES & GEOSPATIAL API
 # ──────────────────────────────────────
 
+@app.route('/api/facilities/geojson', methods=['GET'])
+def get_facilities_geojson():
+    """
+    Returns facilities as a standard GeoJSON FeatureCollection for native MapLibre rendering.
+    """
+    search = request.args.get('search', '').strip()
+    industry = request.args.get('industry')
+    sub_industry = request.args.get('sub_industry')
+    state = request.args.get('state')
+    city = request.args.get('city')
+    scale = request.args.get('scale')
+    min_score = request.args.get('min_score')
+    is_exporter = request.args.get('is_exporter')
+    is_public = request.args.get('is_public')
+    verification = request.args.get('verification')
+    capability = request.args.get('capability')
+
+    where_clauses = ["f.latitude IS NOT NULL AND f.longitude IS NOT NULL"]
+    params = []
+    
+    if search:
+        where_clauses.append("(c.company_name LIKE ? OR c.normalized_name LIKE ? OR f.city LIKE ? OR c.industry LIKE ?)")
+        sp = f"%{search}%"
+        params.extend([sp, sp, sp, sp])
+    if industry:
+        where_clauses.append("c.industry = ?")
+        params.append(industry)
+    if sub_industry:
+        where_clauses.append("c.sub_industry = ?")
+        params.append(sub_industry)
+    if state:
+        where_clauses.append("f.state = ?")
+        params.append(state)
+    if city:
+        where_clauses.append("f.city = ?")
+        params.append(city)
+    if scale:
+        scale_list = [s.strip() for s in scale.split(',') if s.strip()]
+        if scale_list:
+            placeholders = ','.join(['?'] * len(scale_list))
+            where_clauses.append(f"c.company_scale IN ({placeholders})")
+            params.extend(scale_list)
+    if min_score:
+        where_clauses.append("c.scale_score >= ?")
+        params.append(int(min_score))
+    if is_exporter is not None and is_exporter != '':
+        where_clauses.append("c.is_exporter = ?")
+        params.append(1 if is_exporter.lower() in ('true', '1') else 0)
+    if is_public is not None and is_public != '':
+        where_clauses.append("c.is_public_company = ?")
+        params.append(1 if is_public.lower() in ('true', '1') else 0)
+    if verification:
+        where_clauses.append("c.verification_status = ?")
+        params.append(verification)
+    if capability:
+        where_clauses.append("EXISTS (SELECT 1 FROM company_capabilities cc JOIN capabilities cap ON cc.capability_id = cap.id WHERE cc.company_id = c.id AND cap.name = ?)")
+        params.append(capability)
+        
+    where_sql = " AND ".join(where_clauses)
+    
+    sql = f"""
+        SELECT f.id, f.company_id, f.facility_name, f.facility_type, f.address,
+               f.city, f.state, f.pincode, f.latitude, f.longitude, f.google_rating, f.review_count,
+               f.google_maps_url, f.operational_status,
+               c.company_name, c.industry, c.sub_industry, c.company_scale, c.scale_score,
+               c.establishment_year, c.website, c.is_exporter, c.verification_status,
+               (SELECT COUNT(*) FROM facilities f2 WHERE f2.company_id = c.id) as facility_count
+        FROM facilities f
+        JOIN companies c ON f.company_id = c.id
+        WHERE {where_sql}
+        LIMIT 5000
+    """
+    facilities = query_all(sql, params)
+    
+    features = []
+    for f in facilities:
+        features.append({
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [float(f['longitude']), float(f['latitude'])]
+            },
+            "properties": {
+                "id": f['id'],
+                "company_id": f['company_id'],
+                "facility_name": f['facility_name'],
+                "facility_type": f['facility_type'],
+                "address": f['address'],
+                "city": f['city'],
+                "state": f['state'],
+                "pincode": f['pincode'],
+                "google_rating": f['google_rating'],
+                "review_count": f['review_count'],
+                "company_name": f['company_name'],
+                "industry": f['industry'] or 'General',
+                "sub_industry": f['sub_industry'] or '',
+                "company_scale": f['company_scale'] or 'SMALL',
+                "scale_score": f['scale_score'] or 0,
+                "is_exporter": f['is_exporter'] or 0,
+                "facility_count": f['facility_count'] or 1
+            }
+        })
+        
+    return jsonify({
+        "type": "FeatureCollection",
+        "features": features
+    })
+
 @app.route('/api/facilities', methods=['GET'])
 def get_facilities():
     """

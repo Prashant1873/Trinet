@@ -66,12 +66,13 @@ def run_tests():
     assert len(detail['facilities']) > 0
     print(f"[PASS] Company Details API: {detail['company']['company_name']} ({len(detail['facilities'])} mapped sites)")
 
-    # 8. Spatial Clustering API
-    r = requests.get(f"{BASE_URL}/api/facilities/clusters?zoom=5")
+    # 8. Spatial Clustering API & GeoJSON
+    r = requests.get(f"{BASE_URL}/api/facilities/geojson")
     assert r.status_code == 200
-    clusters = r.json()
-    assert clusters['total_facilities'] >= 800
-    print(f"[PASS] Spatial Clustering API: {len(clusters.get('clusters', []))} clusters calculated")
+    geojson = r.json()
+    assert geojson['type'] == 'FeatureCollection'
+    assert len(geojson['features']) >= 1500
+    print(f"[PASS] Native GeoJSON FeatureCollection API: {len(geojson['features'])} planar-locked features")
 
     # 9. AI Search NLP API
     r = requests.post(f"{BASE_URL}/api/ai/search", json={"query": "Pharma factories in Hyderabad with 500+ employees"})

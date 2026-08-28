@@ -1,19 +1,18 @@
 /**
- * TRINET (TM) - Interactive Map Module
- * Powered by MapLibre GL JS with custom markers, clustering, bounds sync, and area selection
+ * TRINET™ - Native WebGL Interactive Map Engine
+ * Powered by MapLibre GL JS with native GPU-accelerated GeoJSON layers,
+ * strictly planar-locked coordinates, crisp vector clustering, and area selection.
  */
 
 const TrinetMap = {
   map: null,
-  markers: [],
   currentPopup: null,
   isSelectToolActive: false,
   selectStartPoint: null,
   selectRectEl: null,
-  facilitiesData: [],
+  geojsonData: { type: 'FeatureCollection', features: [] },
 
   init() {
-    // MapLibre GL Map initialization centered on India
     this.map = new maplibregl.Map({
       container: 'map',
       style: {
@@ -38,27 +37,158 @@ const TrinetMap = {
           }
         ]
       },
-      center: [78.9629, 21.5937], // India center
+      center: [78.9629, 21.5937], // India geographic center
       zoom: 4.8,
       minZoom: 3.5,
       maxZoom: 18
     });
 
     this.map.on('load', () => {
-      this.refreshMarkers();
+      this.setupNativeLayers();
       this.setupControls();
       this.setupSelectionTool();
+      this.refreshMarkers();
     });
 
-    // Viewport debounced change listener
+    // Viewport count update on move
     let moveTimeout;
     this.map.on('moveend', () => {
       clearTimeout(moveTimeout);
       moveTimeout = setTimeout(() => {
-        this.refreshMarkers();
         this.updateViewportCount();
-      }, 250);
+      }, 200);
     });
+  },
+
+  setupNativeLayers() {
+    // 1. Add GeoJSON Source with Native Clustering
+    this.map.addSource('facilities', {
+      type: 'geojson',
+      data: this.geojsonData,
+      cluster: true,
+      clusterMaxZoom: 14, // Cluster points up to zoom 14
+      clusterRadius: 50   // Radius of each cluster when clustering points
+    });
+
+    // 2. Clustered Circles Layer (Fixed to map plane, size & color scaled by density)
+    this.map.addLayer({
+      id: 'clusters',
+      type: 'circle',
+      source: 'facilities',
+      filter: ['has', 'point_count'],
+      paint: {
+        'circle-color': [
+          'step',
+          ['get', 'point_count'],
+          '#00A06C', // Base TRINET Green
+          20,
+          '#0B8A5D', // Medium cluster
+          60,
+          '#076E4A', // Large cluster
+          150,
+          '#045237'  // Enterprise hub
+        ],
+        'circle-radius': [
+          'step',
+          ['get', 'point_count'],
+          16,
+          20,
+          22,
+          60,
+          28,
+          150,
+          36
+        ],
+        'circle-stroke-width': 2.5,
+        'circle-stroke-color': '#FFFFFF',
+        'circle-opacity': 0.94
+      }
+    });
+
+    // 3. Cluster Count Numbers Layer
+    this.map.addLayer({
+      id: 'cluster-count',
+      type: 'symbol',
+      source: 'facilities',
+      filter: ['has', 'point_count'],
+      layout: {
+        'text-field': '{point_count_abbreviated}',
+        'text-size': 12,
+        'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold']
+      },
+      paint: {
+        'text-color': '#FFFFFF'
+      }
+    });
+
+    // 4. Unclustered Individual Factory Markers (Fixed strictly on land coordinates)
+    this.map.addLayer({
+      id: 'unclustered-point',
+      type: 'circle',
+      source: 'facilities',
+      filter: ['!', ['has', 'point_count']],
+      paint: {
+        'circle-color': [
+          'match',
+          ['get', 'industry'],
+          'Automotive', '#EF4444',
+          'Aerospace & Defence', '#8B5CF6',
+          'Electronics', '#3B82F6',
+          'Pharmaceuticals', '#10B981',
+          'Chemicals', '#F59E0B',
+          'Textiles', '#EC4899',
+          'Food & Beverage', '#F97316',
+          'Steel & Metals', '#6B7280',
+          'Machinery', '#14B8A6',
+          'Industrial Equipment', '#0EA5E9',
+          'Plastics', '#A855F7',
+          'Packaging', '#84CC16',
+          '#00A06C' // fallback
+        ],
+        'circle-radius': 7,
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#FFFFFF',
+        'circle-opacity': 0.95
+      }
+    });
+
+    // ── Click Handlers ──
+
+    // Cluster Click -> Smooth Expansion Zoom
+    this.map.on('click', 'clusters', (e) => {
+      const features = this.map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+      if (!features.length) return;
+      
+      const clusterId = features[0].properties.cluster_id;
+      this.map.getSource('facilities').getClusterExpansionZoom(clusterId, (err, zoom) => {
+        if (err) return;
+        this.map.easeTo({
+          center: features[0].geometry.coordinates,
+          zoom: Math.min(zoom, 16),
+          duration: 400
+        });
+      });
+    });
+
+    // Unclustered Point Click -> Show Facility Intelligence Popup
+    this.map.on('click', 'unclustered-point', (e) => {
+      if (!e.features.length) return;
+      const feat = e.features[0];
+      const coords = feat.geometry.coordinates.slice();
+      const props = feat.properties;
+
+      while (Math.abs(e.lngLat.lng - coords[0]) > 180) {
+        coords[0] += e.lngLat.lng > coords[0] ? 360 : -360;
+      }
+
+      this.showFacilityPopup(props, coords);
+    });
+
+    // Cursor Styling on Hover
+    this.map.on('mouseenter', 'clusters', () => { this.map.getCanvas().style.cursor = 'pointer'; });
+    this.map.on('mouseleave', 'clusters', () => { this.map.getCanvas().style.cursor = ''; });
+    this.map.on('mouseenter', 'unclustered-point', () => { this.map.getCanvas().style.cursor = 'pointer'; });
+    this.map.on('mouseleave', 'unclustered-point', () => { this.map.getCanvas().style.cursor = ''; });
   },
 
   setupControls() {
@@ -85,162 +215,65 @@ const TrinetMap = {
 
   async refreshMarkers() {
     if (!this.map) return;
-    
-    // Clear existing DOM markers
-    this.markers.forEach(m => m.remove());
-    this.markers = [];
 
-    const bounds = this.map.getBounds();
-    if (!bounds) return;
-    
-    const zoom = this.map.getZoom();
     const filters = typeof TrinetFilters !== 'undefined' ? TrinetFilters.getFilterPayload() : {};
-
-    const queryParams = new URLSearchParams({
-      zoom: (zoom || 5).toFixed(1),
-      sw_lat: bounds.getSouth(),
-      sw_lng: bounds.getWest(),
-      ne_lat: bounds.getNorth(),
-      ne_lng: bounds.getEast(),
-      ...filters
-    });
+    const queryParams = new URLSearchParams(filters);
 
     try {
-      const res = await fetch(`/api/facilities/clusters?${queryParams}`);
-      const data = await res.json();
+      const res = await fetch(`/api/facilities/geojson?${queryParams}`);
+      const geojson = await res.json();
       
-      this.facilitiesData = data.points || [];
+      this.geojsonData = geojson;
 
-      // 1. Render Clusters
-      if (data.clusters) {
-        data.clusters.forEach(c => {
-          this.createClusterMarker(c);
-        });
-      }
-
-      // 2. Render Individual Points
-      if (data.points) {
-        data.points.forEach(f => {
-          this.createFacilityMarker(f);
-        });
+      if (this.map && this.map.getSource('facilities')) {
+        this.map.getSource('facilities').setData(geojson);
       }
 
       this.updateViewportCount();
     } catch (e) {
-      console.error('Error fetching facility clusters', e);
+      console.error('Failed to load map GeoJSON data', e);
     }
   },
 
-  createClusterMarker(cluster) {
-    const el = document.createElement('div');
-    el.className = 'cluster-marker';
-    
-    // Size class based on count
-    if (cluster.count > 50) el.classList.add('cluster-xlarge');
-    else if (cluster.count > 20) el.classList.add('cluster-large');
-    else if (cluster.count > 5) el.classList.add('cluster-medium');
-    else el.classList.add('cluster-small');
-
-    el.innerHTML = `<span>${cluster.count}</span>`;
-
-    el.addEventListener('click', () => {
-      this.map.flyTo({
-        center: [cluster.longitude, cluster.latitude],
-        zoom: cluster.expansion_zoom || this.map.getZoom() + 2.5,
-        speed: 1.2,
-        curve: 1.42
-      });
-    });
-
-    const marker = new maplibregl.Marker({ element: el })
-      .setLngLat([cluster.longitude, cluster.latitude])
-      .addTo(this.map);
-
-    this.markers.push(marker);
-  },
-
-  createFacilityMarker(facility) {
-    const el = document.createElement('div');
-    el.className = 'facility-marker';
-    
-    // Industry Color
-    const indColor = this.getIndustryColor(facility.industry);
-
-    el.innerHTML = `
-      <svg viewBox="0 0 24 24" width="28" height="28" fill="${indColor}">
-        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-      </svg>
-    `;
-
-    el.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.showFacilityPopup(facility);
-    });
-
-    const marker = new maplibregl.Marker({ element: el })
-      .setLngLat([facility.longitude, facility.latitude])
-      .addTo(this.map);
-
-    this.markers.push(marker);
-  },
-
-  showFacilityPopup(facility) {
+  showFacilityPopup(props, coordinates) {
     if (this.currentPopup) this.currentPopup.remove();
 
     const popupHtml = `
       <div class="facility-popup">
         <div class="facility-popup-header">
-          <div class="facility-popup-company">${facility.company_name}</div>
-          <div class="facility-popup-name">${facility.facility_name || 'Manufacturing Unit'}</div>
+          <div class="facility-popup-company">${props.company_name}</div>
+          <div class="facility-popup-name">${props.facility_name || 'Manufacturing Plant'}</div>
         </div>
         <div class="facility-popup-body">
           <div class="facility-popup-row">
             <span class="facility-popup-label">Industry:</span>
-            <span class="badge badge-primary">${facility.industry || 'General'}</span>
+            <span class="badge badge-primary">${props.industry || 'General'}</span>
           </div>
           <div class="facility-popup-row">
             <span class="facility-popup-label">Location:</span>
-            <span class="facility-popup-value">${facility.city || ''}, ${facility.state || ''}</span>
+            <span class="facility-popup-value">${props.city}, ${props.state}</span>
           </div>
           <div class="facility-popup-row">
             <span class="facility-popup-label">Scale Score:</span>
-            <span class="facility-popup-value text-accent font-semibold">${facility.scale_score || 0}/100</span>
+            <span class="facility-popup-value text-accent font-semibold">${props.scale_score || 0}/100</span>
           </div>
           <div class="facility-popup-row">
-            <span class="facility-popup-label">Total Facilities:</span>
-            <span class="facility-popup-value">${facility.facility_count || 1} Known Sites</span>
+            <span class="facility-popup-label">Address:</span>
+            <span class="facility-popup-value" style="font-size:0.75rem; color:var(--text-secondary);">${props.address || ''}</span>
           </div>
         </div>
         <div class="facility-popup-actions">
-          <button class="btn btn-primary btn-sm" onclick="TrinetCompany.openModal('${facility.company_id}')">
-            View Intelligence
+          <button class="btn btn-primary btn-sm w-full" onclick="TrinetCompany.openModal('${props.company_id}')">
+            View Company Intelligence
           </button>
         </div>
       </div>
     `;
 
-    this.currentPopup = new maplibregl.Popup({ offset: [0, -14], closeOnClick: true })
-      .setLngLat([facility.longitude, facility.latitude])
+    this.currentPopup = new maplibregl.Popup({ offset: [0, -10], closeOnClick: true })
+      .setLngLat(coordinates)
       .setHTML(popupHtml)
       .addTo(this.map);
-  },
-
-  getIndustryColor(industry) {
-    const colors = {
-      'Automotive': '#EF4444',
-      'Aerospace & Defence': '#8B5CF6',
-      'Electronics': '#3B82F6',
-      'Pharmaceuticals': '#10B981',
-      'Chemicals': '#F59E0B',
-      'Textiles': '#EC4899',
-      'Food & Beverage': '#F97316',
-      'Steel & Metals': '#6B7280',
-      'Machinery': '#14B8A6',
-      'Industrial Equipment': '#0EA5E9',
-      'Plastics': '#A855F7',
-      'Packaging': '#84CC16'
-    };
-    return colors[industry] || '#00A06C';
   },
 
   flyToLocation(center, zoom = 11) {
@@ -256,16 +289,18 @@ const TrinetMap = {
   },
 
   updateViewportCount() {
-    if (!this.map) return;
+    if (!this.map || !this.geojsonData || !this.geojsonData.features) return;
+    
     const bounds = this.map.getBounds();
-    const visibleCount = this.facilitiesData.filter(f => {
-      return f.latitude >= bounds.getSouth() && f.latitude <= bounds.getNorth() &&
-             f.longitude >= bounds.getWest() && f.longitude <= bounds.getEast();
+    const visibleCount = this.geojsonData.features.filter(f => {
+      const [lng, lat] = f.geometry.coordinates;
+      return lat >= bounds.getSouth() && lat <= bounds.getNorth() &&
+             lng >= bounds.getWest() && lng <= bounds.getEast();
     }).length;
 
     const countEl = document.getElementById('viewport-count-num');
     if (countEl) {
-      countEl.textContent = visibleCount > 0 ? visibleCount : this.markers.length;
+      countEl.textContent = visibleCount > 0 ? visibleCount.toLocaleString() : this.geojsonData.features.length.toLocaleString();
     }
   },
 
@@ -297,14 +332,13 @@ const TrinetMap = {
       document.getElementById('map-container').appendChild(this.selectRectEl);
 
       const onMouseMove = (moveEvent) => {
-        const currentPt = [moveEvent.clientX, moveEvent.clientY];
         const minX = Math.min(e.clientX, moveEvent.clientX);
         const maxX = Math.max(e.clientX, moveEvent.clientX);
         const minY = Math.min(e.clientY, moveEvent.clientY);
         const maxY = Math.max(e.clientY, moveEvent.clientY);
 
         this.selectRectEl.style.left = `${minX}px`;
-        this.selectRectEl.style.top = `${minY - 56}px`; // header offset
+        this.selectRectEl.style.top = `${minY - 56}px`;
         this.selectRectEl.style.width = `${maxX - minX}px`;
         this.selectRectEl.style.height = `${maxY - minY}px`;
       };
@@ -321,17 +355,17 @@ const TrinetMap = {
         const swLng = Math.min(this.selectStartPoint.lng, selectEndPoint.lng);
         const neLng = Math.max(this.selectStartPoint.lng, selectEndPoint.lng);
 
-        // Find facilities in selected bounding box
-        const selectedFacilities = this.facilitiesData.filter(f => 
-          f.latitude >= swLat && f.latitude <= neLat && f.longitude >= swLng && f.longitude <= neLng
-        );
+        const selectedFeatures = (this.geojsonData.features || []).filter(f => {
+          const [lng, lat] = f.geometry.coordinates;
+          return lat >= swLat && lat <= neLat && lng >= swLng && lng <= neLng;
+        });
 
-        document.getElementById('map-selected-count').textContent = `${selectedFacilities.length} facilities`;
+        document.getElementById('map-selected-count').textContent = `${selectedFeatures.length} facilities`;
 
         const exportBtn = document.getElementById('map-export-selection-btn');
         if (exportBtn) {
           exportBtn.onclick = () => {
-            const compIds = Array.from(new Set(selectedFacilities.map(f => f.company_id)));
+            const compIds = Array.from(new Set(selectedFeatures.map(f => f.properties.company_id)));
             TrinetExport.serverExport({ selectedCompanyIds: compIds }, 'xlsx', `TRINET_Area_Selected_${compIds.length}_Companies.xlsx`);
             this.cancelSelection();
           };
