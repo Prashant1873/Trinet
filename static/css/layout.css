@@ -89,7 +89,8 @@
 }
 
 .header-nav-item {
-  padding: 6px 14px;
+  padding: 0 14px;
+  height: 34px;
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text-secondary);
@@ -99,8 +100,17 @@
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
+  line-height: 1;
   transition: all var(--duration-fast) var(--ease-spring);
+}
+
+.header-nav-item i,
+.header-nav-item svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  display: inline-flex;
 }
 
 .header-nav-item:hover {
@@ -111,7 +121,7 @@
 .header-nav-item.active {
   color: var(--primary);
   background: var(--primary-ghost);
-  border-color: rgba(0, 160, 108, 0.2);
+  border-color: rgba(0, 160, 108, 0.22);
   box-shadow: 0 1px 3px rgba(0, 160, 108, 0.08);
 }
 
@@ -204,14 +214,18 @@
 }
 
 .sidebar-tab {
-  padding: var(--space-3) var(--space-3);
+  padding: 0 16px;
+  height: 42px;
   font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  font-weight: 650;
+  letter-spacing: 0.02em;
   color: var(--text-tertiary);
   border: none;
   background: none;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   transition: color var(--duration-fast) var(--ease-spring),
