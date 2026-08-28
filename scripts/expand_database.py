@@ -97,6 +97,10 @@ ADDITIONAL_ESTATES = {
     'Goa': [
         ('Verna Industrial Estate, South Goa', 15.3650, 73.9350, '403722'),
         ('Kundaim Industrial Estate, North Goa', 15.4250, 73.9850, '403115')
+    ],
+    'Jalandhar': [
+        ('Industrial Focal Point Extension, Jalandhar', 31.3450, 75.6050, '144004'),
+        ('Leather Complex Industrial Area, Kapurthala Road', 31.3650, 75.5450, '144021')
     ]
 }
 
