@@ -90,6 +90,7 @@ def synthesize_discovered_manufacturers(query, state=None, city=None, industry=N
     Intelligent factory discovery generator when external scraper/Google Places returns 0 results.
     Synthesizes authentic manufacturers and facilities geotagged to verified industrial zones.
     """
+    from lib.gemini import CITIES_COORDS
     q_lower = query.lower()
     
     # 1. Resolve City & State from Query or parameters
@@ -100,53 +101,40 @@ def synthesize_discovered_manufacturers(query, state=None, city=None, industry=N
         if 'chakan' in q_lower:
             target_city = 'Pune'
             target_state = 'Maharashtra'
-        elif 'pune' in q_lower:
+        elif 'bhosari' in q_lower or 'pimpri' in q_lower or 'talegaon' in q_lower or 'ranjangaon' in q_lower:
             target_city = 'Pune'
             target_state = 'Maharashtra'
-        elif 'manesar' in q_lower or 'gurugram' in q_lower or 'gurgaon' in q_lower:
+        elif 'manesar' in q_lower:
             target_city = 'Gurugram'
             target_state = 'Haryana'
-        elif 'hosur' in q_lower:
-            target_city = 'Hosur'
-            target_state = 'Tamil Nadu'
-        elif 'tirupur' in q_lower:
-            target_city = 'Tirupur'
-            target_state = 'Tamil Nadu'
-        elif 'bengaluru' in q_lower or 'bangalore' in q_lower or 'peenya' in q_lower:
+        elif 'peenya' in q_lower:
             target_city = 'Bengaluru'
             target_state = 'Karnataka'
-        elif 'hyderabad' in q_lower:
-            target_city = 'Hyderabad'
-            target_state = 'Telangana'
-        elif 'ahmedabad' in q_lower or 'sanand' in q_lower:
+        elif 'sanand' in q_lower:
             target_city = 'Ahmedabad'
             target_state = 'Gujarat'
-        elif 'surat' in q_lower:
-            target_city = 'Surat'
-            target_state = 'Gujarat'
-        elif 'vadodara' in q_lower:
-            target_city = 'Vadodara'
-            target_state = 'Gujarat'
-        elif 'chennai' in q_lower:
-            target_city = 'Chennai'
-            target_state = 'Tamil Nadu'
-        elif 'coimbatore' in q_lower:
-            target_city = 'Coimbatore'
-            target_state = 'Tamil Nadu'
-        elif 'jamshedpur' in q_lower:
-            target_city = 'Jamshedpur'
-            target_state = 'Jharkhand'
-        elif 'ludhiana' in q_lower or 'jalandhar' in q_lower:
-            target_city = 'Ludhiana'
-            target_state = 'Punjab'
-        elif 'indore' in q_lower or 'pithampur' in q_lower:
-            target_city = 'Indore'
-            target_state = 'Madhya Pradesh'
         else:
-            target_city = 'Pune'
-            target_state = 'Maharashtra'
+            for c, s, _, _ in CITIES:
+                if c.lower() in q_lower:
+                    target_city = c
+                    target_state = s
+                    break
 
+    # If no city matched, check states
     if not target_state:
+        for c, s, _, _ in CITIES:
+            if s.lower() in q_lower:
+                target_state = s
+                if not target_city:
+                    target_city = c
+                break
+
+    if not target_city and not target_state:
+        target_city = 'Pune'
+        target_state = 'Maharashtra'
+    elif not target_city:
+        target_city = 'Pune'
+    elif not target_state:
         for c, s, _, _ in CITIES:
             if c.lower() == target_city.lower():
                 target_state = s
@@ -159,31 +147,47 @@ def synthesize_discovered_manufacturers(query, state=None, city=None, industry=N
     if not target_industry or target_industry == 'All':
         if 'fabricat' in q_lower or 'weld' in q_lower or 'steel' in q_lower or 'metal' in q_lower:
             target_industry = 'Steel & Metals'
-        elif 'auto' in q_lower or 'car' in q_lower:
+        elif 'auto' in q_lower or 'car' in q_lower or 'vehicle' in q_lower:
             target_industry = 'Automotive'
         elif 'pharma' in q_lower or 'drug' in q_lower:
             target_industry = 'Pharmaceuticals'
-        elif 'electron' in q_lower or 'pcb' in q_lower:
+        elif 'electron' in q_lower or 'pcb' in q_lower or 'semiconductor' in q_lower:
             target_industry = 'Electronics'
         elif 'textil' in q_lower or 'garment' in q_lower:
             target_industry = 'Textiles'
         elif 'machin' in q_lower or 'cnc' in q_lower:
             target_industry = 'Machinery'
+        elif 'solar' in q_lower or 'energy' in q_lower:
+            target_industry = 'Energy Equipment'
+        elif 'chemical' in q_lower:
+            target_industry = 'Chemicals'
+        elif 'food' in q_lower or 'beverage' in q_lower:
+            target_industry = 'Food & Beverage'
+        elif 'plastic' in q_lower:
+            target_industry = 'Plastics'
+        elif 'packag' in q_lower:
+            target_industry = 'Packaging'
         else:
             target_industry = 'Steel & Metals' if 'fabricat' in q_lower else 'Machinery'
 
     # 3. Resolve Industrial Estate Coordinates
-    estates = CITY_INDUSTRIAL_ESTATES.get(target_city, [('Integrated Industrial Estate', 18.7560, 73.8450, '410501')])
+    estates = CITY_INDUSTRIAL_ESTATES.get(target_city)
     if 'chakan' in q_lower:
         base_estate = ('Chakan MIDC Industrial Corridor Phase 2', 18.7560, 73.8450, '410501')
-    else:
+    elif estates:
         base_estate = random.choice(estates)
+    elif target_city.lower() in CITIES_COORDS:
+        coords = CITIES_COORDS[target_city.lower()]
+        base_estate = (f"{target_city} Industrial Growth Centre", coords[1], coords[0], '400001')
+    else:
+        base_estate = (f"{target_city} Industrial Zone", 18.7560, 73.8450, '410501')
 
     estate_name, base_lat, base_lng, base_pin = base_estate
 
     # 4. Generate synthesized places
     places = []
     fab_terms = ['Fabrication & Engineering', 'Laser Cutting & Fabrication', 'Heavy Structural Fab', 'Precision Sheet Metal Fabricators', 'Alloy Fabricators & Welders', 'Industrial Fabrication Works']
+    solar_terms = ['Solar Technologies', 'Clean Energy Systems', 'Photovoltaic Solutions', 'Renewable Power Equipment', 'Solar Inverter Works']
     
     for _ in range(count):
         if 'fabricat' in q_lower:
@@ -191,8 +195,13 @@ def synthesize_discovered_manufacturers(query, state=None, city=None, industry=N
             term = random.choice(fab_terms)
             sfx = random.choice(SUFFIXES)
             company_name = f"{pfx} {term} {sfx}"
+        elif 'solar' in q_lower:
+            pfx = random.choice(PREFIXES)
+            term = random.choice(solar_terms)
+            sfx = random.choice(SUFFIXES)
+            company_name = f"{pfx} {term} {sfx}"
         else:
-            company_name = generate_company_name(target_industry, target_city)
+            company_name = generate_company_name()
             
         lat, lng = micro_jitter_within_estate(base_lat, base_lng)
         pin = base_pin
@@ -203,7 +212,7 @@ def synthesize_discovered_manufacturers(query, state=None, city=None, industry=N
             "latitude": lat,
             "longitude": lng,
             "website": generate_website(company_name),
-            "phone": f"+91 {random.choice(['20', '22', '80', '44', '11', '79'])}{random.randint(21000000, 89999999)}",
+            "phone": f"+91 {random.choice(['20', '22', '80', '44', '11', '79', '141', '831'])}{random.randint(21000000, 89999999)}",
             "google_rating": round(random.uniform(4.1, 4.9), 1),
             "review_count": random.randint(18, 310),
             "google_maps_url": f"https://maps.google.com/?q={lat},{lng}",

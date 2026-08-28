@@ -460,6 +460,8 @@ def get_facility_clusters():
 def ai_search():
     """
     Natural language query -> structured filter parameters & map action.
+    Automatically triggers discovery pipeline for target places/industries,
+    geotags coordinates, persists to DB, and updates Coverage Dashboard.
     """
     data = request.get_json() or {}
     query = data.get('query', '').strip()
@@ -469,6 +471,67 @@ def ai_search():
         return jsonify({"error": "Query required"}), 400
         
     res = parse_natural_language_search(query, history)
+    
+    # ── Live Discovery Integration ──
+    q_lower = query.lower()
+    filters = res.get('filters', {})
+    city = filters.get('city')
+    state = filters.get('state')
+    industry = filters.get('industry')
+    
+    should_discover = False
+    discovery_keywords = ['discover', 'add', 'find', 'explore', 'pipeline', 'scan', 'crawl', 'new', 'unmapped', 'locate all']
+    if any(k in q_lower for k in discovery_keywords):
+        should_discover = True
+    elif city or state:
+        # Check current count in DB
+        where_parts = []
+        chk_params = []
+        if city:
+            where_parts.append("headquarters_city = ?")
+            chk_params.append(city)
+        if state:
+            where_parts.append("headquarters_state = ?")
+            chk_params.append(state)
+        if industry:
+            where_parts.append("industry = ?")
+            chk_params.append(industry)
+            
+        sql_chk = "SELECT COUNT(*) AS cnt FROM companies"
+        if where_parts:
+            sql_chk += " WHERE " + " AND ".join(where_parts)
+        chk_res = query_one(sql_chk, tuple(chk_params))
+        existing_count = chk_res['cnt'] if chk_res else 0
+        if existing_count < 3: # If few or 0 companies currently in DB for this query, discover automatically!
+            should_discover = True
+
+    if should_discover:
+        try:
+            disc_res = run_discovery_pipeline(query, state=state, city=city, industry=industry)
+            if disc_res and disc_res.get('new_companies', 0) > 0:
+                res['discovery'] = {
+                    "triggered": True,
+                    "new_companies": disc_res.get('new_companies'),
+                    "new_facilities": disc_res.get('new_facilities'),
+                    "location": f"{city or state or 'target area'}",
+                    "industry": industry
+                }
+                # If no mapAction center was specified, obtain from newly discovered places
+                if (not res.get('mapAction') or not res['mapAction'].get('center')) and disc_res.get('places'):
+                    first_p = disc_res['places'][0]
+                    if first_p.get('longitude') and first_p.get('latitude'):
+                        res['mapAction'] = {
+                            "center": [first_p['longitude'], first_p['latitude']],
+                            "zoom": 12.5
+                        }
+                disc_text = f"Discovered and added {disc_res.get('new_companies')} verified {industry or 'manufacturing'} facilities in {city or state or 'target area'} into database & Coverage Dashboard."
+                if res.get('explanation'):
+                    res['explanation'] += f" [Auto-Discovery] {disc_text}"
+                else:
+                    res['explanation'] = disc_text
+        except Exception as e:
+            print(f"Auto-discovery notice: {e}")
+
     return jsonify(res)
 
 # ──────────────────────────────────────

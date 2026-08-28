@@ -80,6 +80,14 @@ const TrinetSearch = {
         TrinetFilters.setFiltersFromAI(data.filters);
       }
 
+      // Handle live discovery and database synchronization
+      if (data.discovery && data.discovery.triggered) {
+        TrinetDashboard.fetchDashboardData();
+        TrinetMap.refreshMarkers();
+        TrinetResults.fetchResults();
+        TrinetApp.showToast(`✨ Auto-discovered & added ${data.discovery.new_companies} manufacturers in ${data.discovery.location} to database & Coverage Dashboard!`, 'success');
+      }
+
       // Fly to Map Location if indicated
       if (data.mapAction && data.mapAction.center) {
         TrinetMap.flyToLocation(data.mapAction.center, data.mapAction.zoom || 12.5);
@@ -88,7 +96,9 @@ const TrinetSearch = {
       // Show AI Explanation Box
       this.showExplanation(data.explanation, data.suggestedFollowUps);
 
-      TrinetApp.showToast('Search applied!', 'success');
+      if (!data.discovery || !data.discovery.triggered) {
+        TrinetApp.showToast('Search applied!', 'success');
+      }
     } catch (e) {
       console.error('AI search failed', e);
       TrinetApp.showToast('Search query applied.', 'info');
