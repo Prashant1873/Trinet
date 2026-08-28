@@ -1,7 +1,8 @@
 /**
- * TRINET™ - Native Interactive Map Engine
- * Powered by MapLibre GL JS with Apple-style HTML cluster markers with visible counts,
- * instantaneous click expansion, zero drag interference, basemap switcher, and area selection.
+ * TRINET™ - Hierarchical Geospatial Map Engine
+ * Level 1 (Zoom < 6.5): State Cluster Badges with counts
+ * Level 2 (Zoom 6.5 - 11.5): City / Industrial Hub Badges with counts
+ * Level 3 (Zoom >= 11.5): Teardrop Map Pins color-coded by Facility Type
  */
 
 const TrinetMap = {
@@ -14,19 +15,44 @@ const TrinetMap = {
   geojsonData: { type: 'FeatureCollection', features: [] },
   markers: [],
 
-  INDUSTRY_COLORS: {
-    'Automotive': '#EF4444',
-    'Aerospace & Defence': '#8B5CF6',
-    'Electronics': '#3B82F6',
-    'Pharmaceuticals': '#10B981',
-    'Chemicals': '#F59E0B',
-    'Textiles': '#EC4899',
-    'Food & Beverage': '#F97316',
-    'Steel & Metals': '#6B7280',
-    'Machinery': '#14B8A6',
-    'Industrial Equipment': '#0EA5E9',
-    'Plastics': '#A855F7',
-    'Packaging': '#84CC16'
+  // Color mapping by Facility Type
+  FACILITY_TYPE_COLORS: {
+    'FACTORY': '#00A06C',
+    'PLANT': '#008F5F',
+    'HQ': '#3B82F6',
+    'ASSEMBLY': '#F59E0B',
+    'FABRICATION': '#8B5CF6',
+    'PROCESSING': '#EC4899',
+    'WAREHOUSE': '#6B7280',
+    'R&D': '#10B981',
+    'DEFAULT': '#00A06C'
+  },
+
+  // State Centroids for Clean National Overview
+  STATE_CENTROIDS: {
+    'Maharashtra': [75.7139, 19.7515],
+    'Gujarat': [71.1924, 22.2587],
+    'Tamil Nadu': [78.6569, 11.1271],
+    'Karnataka': [75.7139, 15.3173],
+    'Telangana': [79.0193, 18.1124],
+    'Uttar Pradesh': [80.9462, 26.8467],
+    'Haryana': [76.0856, 29.0588],
+    'West Bengal': [87.8550, 22.9868],
+    'Rajasthan': [74.2179, 27.0238],
+    'Madhya Pradesh': [78.6569, 22.9734],
+    'Kerala': [76.2711, 10.8505],
+    'Andhra Pradesh': [79.7400, 15.9129],
+    'Punjab': [75.3412, 31.1471],
+    'Jharkhand': [85.2799, 23.6102],
+    'Odisha': [84.4567, 20.9517],
+    'Uttarakhand': [79.0193, 30.0668],
+    'Himachal Pradesh': [77.1734, 31.1048],
+    'Chhattisgarh': [81.8661, 21.2787],
+    'Delhi': [77.1025, 28.7041],
+    'Dadra & Nagar Haveli and Daman & Diu': [72.9667, 20.3974],
+    'Goa': [74.1240, 15.2993],
+    'Chandigarh': [76.7794, 30.7333],
+    'Puducherry': [79.8083, 11.9416]
   },
 
   BASEMAP_SOURCES: {
@@ -80,14 +106,14 @@ const TrinetMap = {
       }
     });
 
-    // Re-cluster markers on zoom or pan end
+    // Hierarchical marker rendering on zoom or pan
     let updateTimeout;
     this.map.on('moveend', () => {
       clearTimeout(updateTimeout);
       updateTimeout = setTimeout(() => {
-        this.renderClustersAndPoints();
+        this.renderHierarchicalView();
         this.updateViewportCount();
-      }, 120);
+      }, 100);
     });
   },
 
@@ -99,50 +125,106 @@ const TrinetMap = {
       const res = await fetch(`/api/facilities/geojson?${queryParams}`);
       const geojson = await res.json();
       this.geojsonData = geojson;
-      this.renderClustersAndPoints();
+      this.renderHierarchicalView();
       this.updateViewportCount();
     } catch (e) {
       console.error('Failed to load map GeoJSON data', e);
     }
   },
 
-  renderClustersAndPoints() {
+  renderHierarchicalView() {
     if (!this.map || !this.geojsonData || !this.geojsonData.features) return;
 
-    // Remove existing markers
+    // Clear existing markers
     this.markers.forEach(m => m.remove());
     this.markers = [];
 
     const zoom = this.map.getZoom();
     const bounds = this.map.getBounds();
-    const features = this.geojsonData.features;
+    const allFeatures = this.geojsonData.features;
 
-    // Filter features in visible viewport
-    const visibleFeatures = features.filter(f => {
+    // ────────────────────────────────────────────────────────
+    // LEVEL 1: Zoom < 6.5 (National Expanded Overview: 1 per State)
+    // ────────────────────────────────────────────────────────
+    if (zoom < 6.5) {
+      const stateGroups = {};
+      allFeatures.forEach(f => {
+        const state = f.properties.state || 'Other';
+        if (!stateGroups[state]) stateGroups[state] = [];
+        stateGroups[state].push(f);
+      });
+
+      Object.entries(stateGroups).forEach(([stateName, feats]) => {
+        const count = feats.length;
+        let coords = this.STATE_CENTROIDS[stateName];
+        
+        if (!coords) {
+          // Fallback to average coords
+          const avgLng = feats.reduce((s, f) => s + f.geometry.coordinates[0], 0) / count;
+          const avgLat = feats.reduce((s, f) => s + f.geometry.coordinates[1], 0) / count;
+          coords = [avgLng, avgLat];
+        }
+
+        const el = document.createElement('div');
+        el.className = 'trinet-badge-cluster trinet-badge-state';
+        el.innerHTML = `
+          <span class="trinet-badge-label">${stateName}</span>
+          <span class="trinet-badge-count">${count}</span>
+        `;
+        el.title = `${stateName}: ${count} manufacturing facilities. Click to zoom.`;
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.map.flyTo({
+            center: coords,
+            zoom: 8.5,
+            duration: 500,
+            essential: true
+          });
+        });
+
+        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+          .setLngLat(coords)
+          .addTo(this.map);
+
+        this.markers.push(marker);
+      });
+      return;
+    }
+
+    // Filter features in visible viewport for deeper zoom levels
+    const visibleFeatures = allFeatures.filter(f => {
       const [lng, lat] = f.geometry.coordinates;
-      return lat >= bounds.getSouth() - 0.5 && lat <= bounds.getNorth() + 0.5 &&
-             lng >= bounds.getWest() - 0.5 && lng <= bounds.getEast() + 0.5;
+      return lat >= bounds.getSouth() - 0.4 && lat <= bounds.getNorth() + 0.4 &&
+             lng >= bounds.getWest() - 0.4 && lng <= bounds.getEast() + 0.4;
     });
 
-    // If high zoom (>= 13), render individual factory pins
-    if (zoom >= 13 || visibleFeatures.length <= 25) {
+    // ────────────────────────────────────────────────────────
+    // LEVEL 3: Zoom >= 11.5 (Granular Precision: Teardrop Pins)
+    // ────────────────────────────────────────────────────────
+    if (zoom >= 11.5 || visibleFeatures.length <= 30) {
       visibleFeatures.forEach(feat => {
         const [lng, lat] = feat.geometry.coordinates;
         const props = feat.properties;
-        const color = this.INDUSTRY_COLORS[props.industry] || '#00A06C';
+        const facType = (props.facility_type || 'FACTORY').toUpperCase();
+        const color = this.FACILITY_TYPE_COLORS[facType] || this.FACILITY_TYPE_COLORS.DEFAULT;
 
         const el = document.createElement('div');
-        el.className = 'trinet-pin';
-        el.style.setProperty('--pin-color', color);
-        el.innerHTML = `<div class="trinet-pin-dot"></div>`;
-        el.title = `${props.company_name} - ${props.city}`;
+        el.className = 'trinet-map-pin';
+        el.innerHTML = `
+          <svg class="trinet-pin-svg" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 0C6.268 0 0 6.268 0 14C0 24.5 14 36 14 36C14 36 28 24.5 28 14C28 6.268 21.732 0 14 0Z" fill="${color}" stroke="#FFFFFF" stroke-width="2"/>
+            <circle cx="14" cy="13" r="5" fill="#FFFFFF"/>
+          </svg>
+        `;
+        el.title = `${props.company_name} - ${props.facility_name || 'Plant'} (${facType})`;
 
         el.addEventListener('click', (e) => {
           e.stopPropagation();
           this.showFacilityPopup(props, [lng, lat]);
         });
 
-        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
           .setLngLat([lng, lat])
           .addTo(this.map);
 
@@ -151,78 +233,71 @@ const TrinetMap = {
       return;
     }
 
-    // Grid-based spatial clustering
-    const clusterRadiusPx = 55;
-    const worldWidth = 360 / (Math.pow(2, zoom) * (512 / clusterRadiusPx));
-    const grid = {};
-
+    // ────────────────────────────────────────────────────────
+    // LEVEL 2: Zoom 6.5 to 11.5 (Districts / Industrial Cities)
+    // ────────────────────────────────────────────────────────
+    const cityGroups = {};
     visibleFeatures.forEach(feat => {
-      const [lng, lat] = feat.geometry.coordinates;
-      const gx = Math.floor(lng / worldWidth);
-      const gy = Math.floor(lat / worldWidth);
-      const key = `${gx}_${gy}`;
-      if (!grid[key]) grid[key] = [];
-      grid[key].push(feat);
+      const city = feat.properties.city || 'District';
+      if (!cityGroups[city]) cityGroups[city] = [];
+      cityGroups[city].push(feat);
     });
 
-    Object.values(grid).forEach(group => {
-      if (group.length === 1) {
-        const feat = group[0];
-        const [lng, lat] = feat.geometry.coordinates;
+    Object.entries(cityGroups).forEach(([cityName, feats]) => {
+      const count = feats.length;
+      const avgLng = feats.reduce((s, f) => s + f.geometry.coordinates[0], 0) / count;
+      const avgLat = feats.reduce((s, f) => s + f.geometry.coordinates[1], 0) / count;
+      const coords = [avgLng, avgLat];
+
+      if (count === 1) {
+        // Single factory -> show pin
+        const feat = feats[0];
         const props = feat.properties;
-        const color = this.INDUSTRY_COLORS[props.industry] || '#00A06C';
+        const facType = (props.facility_type || 'FACTORY').toUpperCase();
+        const color = this.FACILITY_TYPE_COLORS[facType] || this.FACILITY_TYPE_COLORS.DEFAULT;
 
         const el = document.createElement('div');
-        el.className = 'trinet-pin';
-        el.style.setProperty('--pin-color', color);
-        el.innerHTML = `<div class="trinet-pin-dot"></div>`;
-        el.title = `${props.company_name} - ${props.city}`;
+        el.className = 'trinet-map-pin';
+        el.innerHTML = `
+          <svg class="trinet-pin-svg" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 0C6.268 0 0 6.268 0 14C0 24.5 14 36 14 36C14 36 28 24.5 28 14C28 6.268 21.732 0 14 0Z" fill="${color}" stroke="#FFFFFF" stroke-width="2"/>
+            <circle cx="14" cy="13" r="5" fill="#FFFFFF"/>
+          </svg>
+        `;
+        el.title = `${props.company_name} - ${props.facility_name || 'Plant'}`;
 
         el.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.showFacilityPopup(props, [lng, lat]);
+          this.showFacilityPopup(props, [feat.geometry.coordinates[0], feat.geometry.coordinates[1]]);
         });
 
-        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
-          .setLngLat([lng, lat])
+        const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+          .setLngLat(feat.geometry.coordinates)
           .addTo(this.map);
 
         this.markers.push(marker);
       } else {
-        // Compute cluster centroid
-        const avgLng = group.reduce((sum, f) => sum + f.geometry.coordinates[0], 0) / group.length;
-        const avgLat = group.reduce((sum, f) => sum + f.geometry.coordinates[1], 0) / group.length;
-        const count = group.length;
-
-        let sizeClass = 'trinet-cluster-sm';
-        if (count >= 150) sizeClass = 'trinet-cluster-xl';
-        else if (count >= 60) sizeClass = 'trinet-cluster-lg';
-        else if (count >= 20) sizeClass = 'trinet-cluster-md';
-
+        // Multi-facility City Badge
         const el = document.createElement('div');
-        el.className = `trinet-cluster ${sizeClass}`;
+        el.className = 'trinet-badge-cluster trinet-badge-city';
         el.innerHTML = `
-          <div class="trinet-cluster-halo"></div>
-          <div class="trinet-cluster-body">
-            <span class="trinet-cluster-count">${count >= 1000 ? (count/1000).toFixed(1) + 'k' : count}</span>
-          </div>
+          <span class="trinet-badge-label">${cityName}</span>
+          <span class="trinet-badge-count">${count}</span>
         `;
-        el.title = `${count} manufacturing facilities. Click to expand.`;
+        el.title = `${cityName}: ${count} facilities. Click to inspect industrial estates.`;
 
-        // Instant click expansion without drag interference
         el.addEventListener('click', (e) => {
           e.stopPropagation();
-          const nextZoom = Math.min(this.map.getZoom() + 2.4, 15);
           this.map.flyTo({
-            center: [avgLng, avgLat],
-            zoom: nextZoom,
-            duration: 400,
+            center: coords,
+            zoom: 12.5,
+            duration: 450,
             essential: true
           });
         });
 
         const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
-          .setLngLat([avgLng, avgLat])
+          .setLngLat(coords)
           .addTo(this.map);
 
         this.markers.push(marker);
@@ -236,13 +311,20 @@ const TrinetMap = {
       this.currentPopup = null;
     }
 
+    const facType = (props.facility_type || 'FACTORY').toUpperCase();
+    const typeColor = this.FACILITY_TYPE_COLORS[facType] || this.FACILITY_TYPE_COLORS.DEFAULT;
+
     const popupHtml = `
       <div class="facility-popup">
         <div class="facility-popup-header">
           <div class="facility-popup-company">${props.company_name}</div>
-          <div class="facility-popup-name">${props.facility_name || 'Manufacturing Plant'}</div>
+          <div class="facility-popup-name">${props.facility_name || 'Manufacturing Facility'}</div>
         </div>
         <div class="facility-popup-body">
+          <div class="facility-popup-row">
+            <span class="facility-popup-label">Facility Type:</span>
+            <span class="badge" style="background:${typeColor}20; color:${typeColor}; font-weight:600;">${facType}</span>
+          </div>
           <div class="facility-popup-row">
             <span class="facility-popup-label">Industry:</span>
             <span class="badge badge-primary">${props.industry || 'General'}</span>
@@ -269,7 +351,7 @@ const TrinetMap = {
     `;
 
     this.currentPopup = new maplibregl.Popup({
-      offset: [0, -12],
+      offset: [0, -32],
       closeOnClick: true,
       closeButton: true
     })

@@ -56,88 +56,97 @@
 }
 
 /* ──────────────────────────────────────
-   TRINET APPLE CLUSTER & PIN MARKERS
+   TRINET APPLE STATE & CITY CLUSTER BADGES
    ────────────────────────────────────── */
 
-.trinet-cluster {
+.trinet-badge-cluster {
   cursor: pointer;
   user-select: none;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.trinet-cluster-halo {
-  position: absolute;
-  inset: -6px;
+  gap: 6px;
+  padding: 6px 12px;
   border-radius: 9999px;
-  background: #00A06C;
-  opacity: 0.22;
-  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease;
-  pointer-events: none;
-}
-
-.trinet-cluster:hover .trinet-cluster-halo {
-  transform: scale(1.25);
-  opacity: 0.38;
-}
-
-.trinet-cluster-body {
-  position: relative;
-  border-radius: 9999px;
-  background: #00A06C;
+  background: rgba(0, 160, 108, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   color: #FFFFFF;
-  font-weight: 700;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   border: 2px solid #FFFFFF;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: transform 0.15s cubic-bezier(0.25, 1, 0.5, 1), background 0.15s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22), 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif;
+  transition: transform 0.18s cubic-bezier(0.25, 1, 0.5, 1), background 0.15s ease, box-shadow 0.18s ease;
+  white-space: nowrap;
 }
 
-.trinet-cluster:hover .trinet-cluster-body {
-  transform: scale(1.1);
+.trinet-badge-cluster:hover {
+  transform: scale(1.08) translateY(-2px);
   background: #008F5F;
+  box-shadow: 0 8px 20px rgba(0, 160, 108, 0.4), 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
-.trinet-cluster:active .trinet-cluster-body {
-  transform: scale(0.92);
+.trinet-badge-cluster:active {
+  transform: scale(0.95);
 }
 
-.trinet-cluster-sm .trinet-cluster-body { width: 32px; height: 32px; font-size: 11px; background: #00A06C; }
-.trinet-cluster-md .trinet-cluster-body { width: 40px; height: 40px; font-size: 12px; background: #0B8A5D; }
-.trinet-cluster-lg .trinet-cluster-body { width: 48px; height: 48px; font-size: 13px; background: #076E4A; }
-.trinet-cluster-xl .trinet-cluster-body { width: 56px; height: 56px; font-size: 14px; background: #045237; }
+.trinet-badge-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
 
-/* Individual Factory Pin Markers */
-.trinet-pin {
-  width: 24px;
-  height: 24px;
+.trinet-badge-count {
+  background: rgba(255, 255, 255, 0.28);
+  padding: 1px 7px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Size Variants */
+.trinet-badge-state {
+  background: rgba(0, 140, 95, 0.96);
+  padding: 7px 14px;
+}
+
+.trinet-badge-state .trinet-badge-label {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trinet-badge-city {
+  background: rgba(14, 138, 94, 0.94);
+}
+
+/* ──────────────────────────────────────
+   TEARDROP MAP PIN FOR FACTORIES
+   ────────────────────────────────────── */
+
+.trinet-map-pin {
   cursor: pointer;
+  width: 28px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
+  transition: transform 0.18s cubic-bezier(0.25, 1, 0.5, 1);
+  transform-origin: bottom center;
 }
 
-.trinet-pin-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 9999px;
-  background: var(--pin-color, #00A06C);
-  border: 2.5px solid #FFFFFF;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-  transition: transform 0.15s cubic-bezier(0.25, 1, 0.5, 1);
+.trinet-map-pin:hover {
+  transform: scale(1.28) translateY(-4px);
+  z-index: 100;
 }
 
-.trinet-pin:hover .trinet-pin-dot {
-  transform: scale(1.4);
+.trinet-map-pin:active {
+  transform: scale(1.05);
 }
 
-.trinet-pin:active .trinet-pin-dot {
-  transform: scale(0.9);
+.trinet-pin-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
 /* ──────────────────────────────────────
