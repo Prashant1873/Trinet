@@ -24,8 +24,31 @@ const TrinetMap = {
     'FABRICATION': '#8B5CF6',
     'PROCESSING': '#EC4899',
     'WAREHOUSE': '#6B7280',
+    'RND': '#10B981',
     'R&D': '#10B981',
     'DEFAULT': '#00A06C'
+  },
+
+  // Color mapping by Industry Sector
+  INDUSTRY_COLORS: {
+    'Automotive': '#EF4444',
+    'Pharmaceuticals': '#10B981',
+    'Electronics': '#3B82F6',
+    'Aerospace & Defence': '#8B5CF6',
+    'Chemicals': '#F59E0B',
+    'Textiles': '#EC4899',
+    'Steel & Metals': '#6B7280',
+    'Machinery': '#14B8A6',
+    'Electricals': '#6366F1',
+    'Plastics & Polymers': '#06B6D4',
+    'Food & Beverage': '#84CC16',
+    'Energy Equipment': '#F97316',
+    'Construction Materials': '#78716C',
+    'Precision Tools': '#0EA5E9',
+    'Petrochemicals': '#D97706',
+    'Paper & Packaging': '#A855F7',
+    'Consumer Goods': '#10B981',
+    'Other': '#00A06C'
   },
 
   // State Centroids for Clean National Overview
@@ -48,6 +71,7 @@ const TrinetMap = {
     'Uttarakhand': [79.0193, 30.0668],
     'Himachal Pradesh': [77.1734, 31.1048],
     'Chhattisgarh': [81.8661, 21.2787],
+    'Assam': [92.9376, 26.2006],
     'Delhi': [77.1025, 28.7041],
     'Dadra & Nagar Haveli and Daman & Diu': [72.9667, 20.3974],
     'Goa': [74.1240, 15.2993],
@@ -196,10 +220,9 @@ const TrinetMap = {
     const isFilteredByCity = typeof TrinetFilters !== 'undefined' && (!!TrinetFilters.state.city || !!TrinetFilters.state.search);
 
     // ────────────────────────────────────────────────────────
-    // LEVEL 1: Zoom < 6.5 (National Expanded Overview: 1 per State)
-    // Only active on broad all-India browse without a specific city/search query
+    // LEVEL 1: Zoom < 6.8 (National Expanded Overview: 1 State Badge per State)
     // ────────────────────────────────────────────────────────
-    if (zoom < 6.5 && !isFilteredByCity && allFeatures.length > 200) {
+    if (zoom < 6.8 && !isFilteredByCity && allFeatures.length > 200) {
       const stateGroups = {};
       allFeatures.forEach(f => {
         const state = f.properties.state || 'Other';
@@ -224,7 +247,7 @@ const TrinetMap = {
         el.innerHTML = `
           <div class="trinet-badge-header">
             <span class="trinet-badge-label">${stateName}</span>
-            <span class="trinet-badge-count">${count}</span>
+            <span class="trinet-badge-count"><span class="badge-num">${count}</span> factories</span>
           </div>
           ${sectorData.barHtml}
         `;
@@ -234,7 +257,7 @@ const TrinetMap = {
           e.stopPropagation();
           this.map.flyTo({
             center: coords,
-            zoom: 8.5,
+            zoom: 8.8,
             duration: 500,
             essential: true
           });
@@ -260,10 +283,10 @@ const TrinetMap = {
     // LEVEL 3: Granular Precision: Direct Teardrop Factory Pins
     // Show direct pins when:
     // 1. A city or search filter is active
-    // 2. Or zoom >= 9.5
-    // 3. Or visible/total facilities <= 120
+    // 2. Or zoom >= 10.5
+    // 3. Or visible/total facilities <= 80
     // ────────────────────────────────────────────────────────
-    if (isFilteredByCity || zoom >= 9.5 || visibleFeatures.length <= 120 || allFeatures.length <= 120) {
+    if (isFilteredByCity || zoom >= 10.5 || visibleFeatures.length <= 80 || allFeatures.length <= 80) {
       const displayFeatures = isFilteredByCity ? allFeatures : visibleFeatures;
       displayFeatures.forEach(feat => {
         const [lng, lat] = feat.geometry.coordinates;
@@ -274,6 +297,7 @@ const TrinetMap = {
         const el = document.createElement('div');
         el.className = 'trinet-map-pin';
         el.innerHTML = `
+          <div class="trinet-pin-tag">${props.company_name}</div>
           <svg class="trinet-pin-svg" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M14 0C6.268 0 0 6.268 0 14C0 24.5 14 36 14 36C14 36 28 24.5 28 14C28 6.268 21.732 0 14 0Z" fill="${color}" stroke="#FFFFFF" stroke-width="2"/>
             <circle cx="14" cy="13" r="5" fill="#FFFFFF"/>
@@ -296,7 +320,7 @@ const TrinetMap = {
     }
 
     // ────────────────────────────────────────────────────────
-    // LEVEL 2: Regional View (6.5 <= Zoom < 9.5 on broad all-India browse)
+    // LEVEL 2: Regional View (6.8 <= Zoom < 10.5 on broad all-India browse)
     // ────────────────────────────────────────────────────────
     const cityGroups = {};
     visibleFeatures.forEach(feat => {
@@ -321,6 +345,7 @@ const TrinetMap = {
         const el = document.createElement('div');
         el.className = 'trinet-map-pin';
         el.innerHTML = `
+          <div class="trinet-pin-tag">${props.company_name}</div>
           <svg class="trinet-pin-svg" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M14 0C6.268 0 0 6.268 0 14C0 24.5 14 36 14 36C14 36 28 24.5 28 14C28 6.268 21.732 0 14 0Z" fill="${color}" stroke="#FFFFFF" stroke-width="2"/>
             <circle cx="14" cy="13" r="5" fill="#FFFFFF"/>
@@ -347,7 +372,7 @@ const TrinetMap = {
         el.innerHTML = `
           <div class="trinet-badge-header">
             <span class="trinet-badge-label">${cityName}</span>
-            <span class="trinet-badge-count">${count}</span>
+            <span class="trinet-badge-count"><span class="badge-num">${count}</span> sites</span>
           </div>
           ${sectorData.barHtml}
         `;
