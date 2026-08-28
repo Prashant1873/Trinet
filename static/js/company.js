@@ -1,6 +1,6 @@
 /**
- * TRINET (TM) - Company Intelligence Module
- * Slide-in detailed intelligence drawer, mini-map, and data provenance table
+ * TRINET™ - Company Intelligence Module
+ * Slide-in detailed intelligence drawer, scale score radar chart, facility site switcher, mini-map.
  */
 
 const TrinetCompany = {
@@ -16,6 +16,19 @@ const TrinetCompany = {
     const overlay = document.getElementById('global-overlay');
     if (overlay) {
       overlay.addEventListener('click', () => this.closeModal());
+    }
+
+    const exportSingleBtn = document.getElementById('modal-export-single-btn');
+    if (exportSingleBtn) {
+      exportSingleBtn.addEventListener('click', () => {
+        if (this.currentCompany) {
+          TrinetExport.serverExport(
+            { selectedCompanyIds: [this.currentCompany.id] },
+            'xlsx',
+            `${this.currentCompany.company_name.replace(/\s+/g, '_')}_Intelligence.xlsx`
+          );
+        }
+      });
     }
   },
 
@@ -34,11 +47,11 @@ const TrinetCompany = {
       modal?.classList.add('active');
       overlay?.classList.add('active');
 
-      // Also fly the main map to the company's actual facility location
+      // Fly the main map to the company's facility
       if (data.facilities && data.facilities.length > 0 && typeof TrinetMap !== 'undefined' && TrinetMap.map) {
         const firstFac = data.facilities[0];
         if (firstFac.latitude && firstFac.longitude) {
-          TrinetMap.flyToLocation([firstFac.longitude, firstFac.latitude], 12);
+          TrinetMap.flyToLocation([firstFac.longitude, firstFac.latitude], 13);
         }
       }
     } catch (e) {
@@ -75,7 +88,12 @@ const TrinetCompany = {
     document.getElementById('modal-metric-year').textContent = c.establishment_year ? c.establishment_year : 'Unknown';
     document.getElementById('modal-metric-emp').textContent = c.employee_count ? `${c.employee_count.toLocaleString()}` : 'N/A';
 
-    // Facilities List
+    // Render Multi-Axis Radar Chart
+    this.renderRadarChart(c, facilities);
+
+    // Render Facility Tabs & List
+    this.renderFacilityTabs(facilities);
+
     document.getElementById('modal-fac-count').textContent = facilities.length;
     const facList = document.getElementById('modal-facilities-list');
     if (facList) {
@@ -139,40 +157,143 @@ const TrinetCompany = {
     if (typeof lucide !== 'undefined') lucide.createIcons();
   },
 
-  renderMiniMap(facilities) {
-    const validFacilities = facilities.filter(f => f.latitude && f.longitude);
-    if (validFacilities.length === 0) return;
+  renderRadarChart(c, facilities) {
+    const container = document.getElementById('modal-radar-chart');
+    if (!container) return;
 
-    const centerLat = validFacilities[0].latitude;
-    const centerLng = validFacilities[0].longitude;
+    const workforceVal = Math.min(100, Math.round(((c.employee_count || 50) / 1200) * 100));
+    const footprintVal = Math.min(100, Math.round((facilities.length / 4) * 100));
+    const exportVal = c.is_exporter ? 90 : 30;
+    const verifVal = c.verification_status === 'VERIFIED' ? 95 : (c.verification_status === 'PARTIALLY_VERIFIED' ? 60 : 30);
+    const stabilityVal = Math.min(100, Math.round(((2026 - (c.establishment_year || 2012)) / 35) * 100));
+
+    const axes = [
+      { label: 'Workforce', value: workforceVal },
+      { label: 'Footprint', value: footprintVal },
+      { label: 'Export Reach', value: exportVal },
+      { label: 'Verification', value: verifVal },
+      { label: 'Stability', value: stabilityVal }
+    ];
+
+    const size = 200;
+    const center = size / 2;
+    const radius = 65;
+    const total = axes.length;
+
+    let gridSvg = '';
+    [0.33, 0.66, 1.0].forEach(rRatio => {
+      const points = axes.map((_, i) => {
+        const angle = (Math.PI * 2 / total) * i - Math.PI / 2;
+        const x = center + radius * rRatio * Math.cos(angle);
+        const y = center + radius * rRatio * Math.sin(angle);
+        return `${x},${y}`;
+      }).join(' ');
+      gridSvg += `<polygon points="${points}" class="radar-grid-line" />`;
+    });
+
+    let axisSvg = '';
+    axes.forEach((axis, i) => {
+      const angle = (Math.PI * 2 / total) * i - Math.PI / 2;
+      const x = center + radius * Math.cos(angle);
+      const y = center + radius * Math.sin(angle);
+      const labelX = center + (radius + 18) * Math.cos(angle);
+      const labelY = center + (radius + 18) * Math.sin(angle) + 3;
+      axisSvg += `
+        <line x1="${center}" y1="${center}" x2="${x}" y2="${y}" class="radar-axis-line" />
+        <text x="${labelX}" y="${labelY}" class="radar-label">${axis.label}</text>
+      `;
+    });
+
+    const valPoints = axes.map((axis, i) => {
+      const rRatio = Math.max(0.18, axis.value / 100);
+      const angle = (Math.PI * 2 / total) * i - Math.PI / 2;
+      const x = center + radius * rRatio * Math.cos(angle);
+      const y = center + radius * rRatio * Math.sin(angle);
+      return `${x},${y}`;
+    }).join(' ');
+
+    container.innerHTML = `
+      <svg viewBox="0 0 ${size} ${size}" class="radar-chart-svg">
+        ${gridSvg}
+        ${axisSvg}
+        <polygon points="${valPoints}" class="radar-polygon" />
+      </svg>
+    `;
+  },
+
+  renderFacilityTabs(facilities) {
+    const container = document.getElementById('modal-facility-tabs');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (facilities.length <= 1) {
+      container.style.display = 'none';
+      return;
+    }
+    container.style.display = 'flex';
+    
+    facilities.forEach((f, idx) => {
+      const btn = document.createElement('button');
+      btn.className = `facility-tab-btn ${idx === 0 ? 'active' : ''}`;
+      btn.textContent = `Site ${idx + 1}: ${f.city}`;
+      btn.addEventListener('click', () => {
+        container.querySelectorAll('.facility-tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (this.miniMap && f.latitude && f.longitude) {
+          this.miniMap.flyTo({ center: [f.longitude, f.latitude], zoom: 14 });
+        }
+      });
+      container.appendChild(btn);
+    });
+  },
+
+  renderMiniMap(facilities) {
+    const container = document.getElementById('company-minimap');
+    if (!container) return;
 
     if (this.miniMap) {
       this.miniMap.remove();
+      this.miniMap = null;
     }
 
-    this.miniMap = new maplibregl.Map({
-      container: 'company-minimap',
-      style: {
-        version: 8,
-        sources: {
-          'osm-tiles': {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256
-          }
-        },
-        layers: [{ id: 'osm', type: 'raster', source: 'osm-tiles' }]
-      },
-      center: [centerLng, centerLat],
-      zoom: 11,
-      interactive: true
-    });
+    if (!facilities.length || !facilities[0].latitude) {
+      container.style.display = 'none';
+      return;
+    }
 
-    validFacilities.forEach(f => {
-      new maplibregl.Marker({ color: '#00A06C' })
-        .setLngLat([f.longitude, f.latitude])
-        .addTo(this.miniMap);
-    });
+    container.style.display = 'block';
+    const firstFac = facilities[0];
+
+    setTimeout(() => {
+      this.miniMap = new maplibregl.Map({
+        container: 'company-minimap',
+        style: {
+          version: 8,
+          sources: {
+            'osm-tiles': {
+              type: 'raster',
+              tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+              tileSize: 256
+            }
+          },
+          layers: [{ id: 'osm-layer', type: 'raster', source: 'osm-tiles' }]
+        },
+        center: [firstFac.longitude, firstFac.latitude],
+        zoom: 12,
+        interactive: true
+      });
+
+      this.miniMap.on('load', () => {
+        facilities.forEach(f => {
+          if (f.latitude && f.longitude) {
+            new maplibregl.Marker({ color: '#00A06C' })
+              .setLngLat([f.longitude, f.latitude])
+              .setPopup(new maplibregl.Popup({ offset: 25 }).setText(f.facility_name || 'Plant'))
+              .addTo(this.miniMap);
+          }
+        });
+      });
+    }, 100);
   },
 
   closeModal() {

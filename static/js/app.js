@@ -1,15 +1,18 @@
 /**
- * TRINET (TM) - Main Application Coordinator
- * State orchestration, view switching, toasts, and module initialization
+ * TRINET™ - Main Application Coordinator
+ * State orchestration, theme switching, view routing, shortcuts, toasts, and module initialization.
  */
 
 const TrinetApp = {
   currentView: 'map', // 'map' | 'companies' | 'dashboard'
+  currentTheme: 'light',
 
   async init() {
+    this.initTheme();
     this.setupViewNavigation();
     this.setupSidebarTabs();
     this.setupSidebarCollapse();
+    this.setupKeyboardShortcuts();
 
     // Initialize Submodules
     await TrinetFilters.init();
@@ -23,10 +26,36 @@ const TrinetApp = {
     this.fetchGlobalStats();
   },
 
+  // ── Theme Manager ──
+  initTheme() {
+    const savedTheme = localStorage.getItem('trinet_theme') ||
+      (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    this.setTheme(savedTheme);
+
+    const toggleBtn = document.getElementById('theme-toggle-btn');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        const nextTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+        this.setTheme(nextTheme);
+      });
+    }
+  },
+
+  setTheme(theme) {
+    this.currentTheme = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('trinet_theme', theme);
+
+    const themeIcon = document.getElementById('theme-icon');
+    if (themeIcon) {
+      themeIcon.setAttribute('data-lucide', theme === 'dark' ? 'sun' : 'moon');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+  },
+
   setupViewNavigation() {
-    // Header navigation buttons
     document.querySelectorAll('.header-nav-item').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', () => {
         const view = btn.getAttribute('data-view');
         this.switchView(view);
       });
@@ -71,7 +100,7 @@ const TrinetApp = {
 
   setupSidebarTabs() {
     document.querySelectorAll('.sidebar-tab').forEach(tab => {
-      tab.addEventListener('click', (e) => {
+      tab.addEventListener('click', () => {
         const targetTab = tab.getAttribute('data-tab');
         this.switchSidebarTab(targetTab);
       });
@@ -114,6 +143,40 @@ const TrinetApp = {
     }
   },
 
+  setupKeyboardShortcuts() {
+    window.addEventListener('keydown', (e) => {
+      // Ignore if user is currently typing in an input
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+        if (e.key === 'Escape') {
+          document.activeElement.blur();
+          TrinetCompany.closeModal();
+        }
+        return;
+      }
+
+      if (e.key === '/') {
+        e.preventDefault();
+        const input = document.getElementById('ai-chat-input');
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      } else if (e.key === 'Escape') {
+        TrinetCompany.closeModal();
+        TrinetMap.cancelSelection();
+      } else if (e.key.toLowerCase() === 'm' && !e.metaKey && !e.ctrlKey) {
+        this.switchView('map');
+      } else if (e.key.toLowerCase() === 'c' && !e.metaKey && !e.ctrlKey) {
+        this.switchView('companies');
+      } else if (e.key.toLowerCase() === 'd' && !e.metaKey && !e.ctrlKey) {
+        this.switchView('dashboard');
+      } else if (e.key.toLowerCase() === 't' && !e.metaKey && !e.ctrlKey) {
+        const nextTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+        this.setTheme(nextTheme);
+      }
+    });
+  },
+
   async fetchGlobalStats() {
     try {
       const res = await fetch('/api/stats');
@@ -142,13 +205,12 @@ const TrinetApp = {
     container.appendChild(toast);
 
     setTimeout(() => {
-      toast.style.animation = 'toast-out 300ms cubic-bezier(0.25, 1, 0.5, 1) forwards';
-      setTimeout(() => toast.remove(), 300);
+      toast.style.animation = 'toast-out 250ms var(--ease-spring) forwards';
+      setTimeout(() => toast.remove(), 250);
     }, 3500);
   }
 };
 
-// Start application when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   TrinetApp.init();
 });

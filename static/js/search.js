@@ -1,6 +1,6 @@
 /**
- * TRINET (TM) - AI Search Module
- * Conversational Natural Language to Map Filters powered by Gemini AI
+ * TRINET™ - AI Search Module
+ * Conversational Natural Language to Map Filters powered by Gemini AI with prompt carousel.
  */
 
 const TrinetSearch = {
@@ -38,12 +38,13 @@ const TrinetSearch = {
       });
     }
 
-    // Keyboard shortcut '/' to focus search
-    window.addEventListener('keydown', (e) => {
-      if (e.key === '/' && document.activeElement !== input) {
-        e.preventDefault();
-        input?.focus();
-      }
+    // Setup Quick Prompt Suggestion Chips
+    document.querySelectorAll('.prompt-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const prompt = chip.getAttribute('data-prompt');
+        if (input) input.value = prompt;
+        this.executeAISearch(prompt);
+      });
     });
   },
 
@@ -54,7 +55,7 @@ const TrinetSearch = {
 
     this.isLoading = true;
     const submitBtn = document.getElementById('ai-chat-submit-btn');
-    if (submitBtn) submitBtn.innerHTML = `<div class="ai-loading-dot" style="width:4px;height:4px;"></div>`;
+    if (submitBtn) submitBtn.innerHTML = `<div class="ai-loading-dot" style="width:6px;height:6px;"></div>`;
 
     TrinetApp.showToast(`Analyzing query with AI...`, 'info');
 

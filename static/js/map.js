@@ -1,16 +1,23 @@
 /**
  * TRINET™ - Native WebGL Interactive Map Engine
  * Powered by MapLibre GL JS with native GPU-accelerated GeoJSON layers,
- * strictly planar-locked coordinates, crisp vector clustering, and area selection.
+ * basemap switcher (Street/Satellite/Dark), interactive industry legend, and area selection.
  */
 
 const TrinetMap = {
   map: null,
   currentPopup: null,
+  currentBasemap: 'light',
   isSelectToolActive: false,
   selectStartPoint: null,
   selectRectEl: null,
   geojsonData: { type: 'FeatureCollection', features: [] },
+
+  BASEMAP_SOURCES: {
+    light: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    dark: 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+  },
 
   init() {
     this.map = new maplibregl.Map({
@@ -18,20 +25,18 @@ const TrinetMap = {
       style: {
         version: 8,
         sources: {
-          'osm-tiles': {
+          'basemap-tiles': {
             type: 'raster',
-            tiles: [
-              'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-            ],
+            tiles: [this.BASEMAP_SOURCES.light],
             tileSize: 256,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution: '&copy; OpenStreetMap contributors'
           }
         },
         layers: [
           {
-            id: 'osm-layer',
+            id: 'basemap-layer',
             type: 'raster',
-            source: 'osm-tiles',
+            source: 'basemap-tiles',
             minzoom: 0,
             maxzoom: 19
           }
@@ -46,6 +51,8 @@ const TrinetMap = {
     this.map.on('load', () => {
       this.setupNativeLayers();
       this.setupControls();
+      this.setupBasemapSwitcher();
+      this.setupLegend();
       this.setupSelectionTool();
       this.refreshMarkers();
     });
@@ -61,16 +68,18 @@ const TrinetMap = {
   },
 
   setupNativeLayers() {
+    if (this.map.getSource('facilities')) return;
+
     // 1. Add GeoJSON Source with Native Clustering
     this.map.addSource('facilities', {
       type: 'geojson',
       data: this.geojsonData,
       cluster: true,
-      clusterMaxZoom: 14, // Cluster points up to zoom 14
-      clusterRadius: 50   // Radius of each cluster when clustering points
+      clusterMaxZoom: 14,
+      clusterRadius: 50
     });
 
-    // 2. Clustered Circles Layer (Fixed to map plane, size & color scaled by density)
+    // 2. Clustered Circles Layer
     this.map.addLayer({
       id: 'clusters',
       type: 'circle',
@@ -80,13 +89,13 @@ const TrinetMap = {
         'circle-color': [
           'step',
           ['get', 'point_count'],
-          '#00A06C', // Base TRINET Green
+          '#00A06C',
           20,
-          '#0B8A5D', // Medium cluster
+          '#0B8A5D',
           60,
-          '#076E4A', // Large cluster
+          '#076E4A',
           150,
-          '#045237'  // Enterprise hub
+          '#045237'
         ],
         'circle-radius': [
           'step',
@@ -121,7 +130,7 @@ const TrinetMap = {
       }
     });
 
-    // 4. Unclustered Individual Factory Markers (Fixed strictly on land coordinates)
+    // 4. Unclustered Individual Factory Markers
     this.map.addLayer({
       id: 'unclustered-point',
       type: 'circle',
@@ -143,7 +152,7 @@ const TrinetMap = {
           'Industrial Equipment', '#0EA5E9',
           'Plastics', '#A855F7',
           'Packaging', '#84CC16',
-          '#00A06C' // fallback
+          '#00A06C'
         ],
         'circle-radius': 7,
         'circle-stroke-width': 2,
@@ -153,8 +162,6 @@ const TrinetMap = {
     });
 
     // ── Click Handlers ──
-
-    // Cluster Click -> Smooth Expansion Zoom
     this.map.on('click', 'clusters', (e) => {
       const features = this.map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
       if (!features.length) return;
@@ -170,7 +177,6 @@ const TrinetMap = {
       });
     });
 
-    // Unclustered Point Click -> Show Facility Intelligence Popup
     this.map.on('click', 'unclustered-point', (e) => {
       if (!e.features.length) return;
       const feat = e.features[0];
@@ -189,6 +195,82 @@ const TrinetMap = {
     this.map.on('mouseleave', 'clusters', () => { this.map.getCanvas().style.cursor = ''; });
     this.map.on('mouseenter', 'unclustered-point', () => { this.map.getCanvas().style.cursor = 'pointer'; });
     this.map.on('mouseleave', 'unclustered-point', () => { this.map.getCanvas().style.cursor = ''; });
+  },
+
+  setupBasemapSwitcher() {
+    document.querySelectorAll('.map-style-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const style = btn.getAttribute('data-style');
+        document.querySelectorAll('.map-style-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.switchBasemap(style);
+      });
+    });
+  },
+
+  switchBasemap(styleKey) {
+    this.currentBasemap = styleKey;
+    const tileUrl = this.BASEMAP_SOURCES[styleKey] || this.BASEMAP_SOURCES.light;
+    
+    // Smoothly swap raster tiles
+    const source = this.map.getSource('basemap-tiles');
+    if (source) {
+      this.map.removeLayer('unclustered-point');
+      this.map.removeLayer('cluster-count');
+      this.map.removeLayer('clusters');
+      this.map.removeLayer('basemap-layer');
+      this.map.removeSource('basemap-tiles');
+      this.map.removeSource('facilities');
+
+      this.map.addSource('basemap-tiles', {
+        type: 'raster',
+        tiles: [tileUrl],
+        tileSize: 256
+      });
+
+      this.map.addLayer({
+        id: 'basemap-layer',
+        type: 'raster',
+        source: 'basemap-tiles',
+        minzoom: 0,
+        maxzoom: 19
+      });
+
+      this.setupNativeLayers();
+      if (this.map.getSource('facilities')) {
+        this.map.getSource('facilities').setData(this.geojsonData);
+      }
+    }
+  },
+
+  setupLegend() {
+    const toggle = document.getElementById('map-legend-toggle');
+    const items = document.getElementById('map-legend-items');
+    const icon = document.getElementById('legend-toggle-icon');
+
+    if (toggle && items) {
+      toggle.addEventListener('click', () => {
+        const isHidden = items.style.display === 'none';
+        items.style.display = isHidden ? 'grid' : 'none';
+        if (icon) {
+          icon.setAttribute('data-lucide', isHidden ? 'chevron-down' : 'chevron-up');
+          if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+      });
+    }
+
+    // Legend item click -> filter by that industry
+    document.querySelectorAll('.legend-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const industry = item.getAttribute('data-industry');
+        const filterSelect = document.getElementById('filter-industry');
+        if (filterSelect) {
+          filterSelect.value = industry;
+          TrinetFilters.applyFilters();
+          TrinetApp.showToast(`Filtered by ${industry}`, 'info');
+        }
+      });
+    });
   },
 
   setupControls() {

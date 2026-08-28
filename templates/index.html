@@ -65,6 +65,9 @@
 
     <!-- Header Actions -->
     <div class="header-actions">
+      <button class="theme-toggle-btn" id="theme-toggle-btn" title="Toggle Light / Dark Theme">
+        <i data-lucide="moon" id="theme-icon" style="width:16px; height:16px;"></i>
+      </button>
       <button class="btn btn-secondary btn-sm" id="header-export-btn" title="Export current filtered results">
         <i data-lucide="download" style="width:14px; height:14px;"></i> Export Data
       </button>
@@ -265,6 +268,28 @@
           </button>
         </div>
 
+        <!-- Quick Prompt Suggestions Carousel -->
+        <div class="prompt-chips-carousel" id="prompt-chips-container">
+          <button class="prompt-chip" data-prompt="Pharma factories in Hyderabad with 500+ workers">
+            <i data-lucide="pill" style="width:11px; height:11px;"></i> Pharma in Hyderabad
+          </button>
+          <button class="prompt-chip" data-prompt="Automotive component manufacturers in Pune">
+            <i data-lucide="cog" style="width:11px; height:11px;"></i> Auto CNC in Pune
+          </button>
+          <button class="prompt-chip" data-prompt="Electronics and semiconductor manufacturing in Bengaluru">
+            <i data-lucide="cpu" style="width:11px; height:11px;"></i> Electronics in Bengaluru
+          </button>
+          <button class="prompt-chip" data-prompt="Active exporters in Gujarat with large scale score">
+            <i data-lucide="plane-takeoff" style="width:11px; height:11px;"></i> Exporters in Gujarat
+          </button>
+          <button class="prompt-chip" data-prompt="Textile fabric manufacturers in Surat">
+            <i data-lucide="shirt" style="width:11px; height:11px;"></i> Textiles in Surat
+          </button>
+          <button class="prompt-chip" data-prompt="Steel and metals plants in Jamshedpur">
+            <i data-lucide="layers" style="width:11px; height:11px;"></i> Steel in Jamshedpur
+          </button>
+        </div>
+
         <!-- AI Explanation Banner -->
         <div class="ai-explanation" id="ai-explanation-box" style="display:none;">
           <i data-lucide="bot" class="ai-explanation-icon" style="width:16px; height:16px;"></i>
@@ -275,6 +300,31 @@
           <button class="btn-icon btn-sm ai-explanation-dismiss" id="ai-explanation-close">
             <i data-lucide="x" style="width:14px; height:14px;"></i>
           </button>
+        </div>
+      </div>
+
+      <!-- Basemap Style Switcher -->
+      <div class="map-style-switcher" id="map-style-switcher">
+        <button class="map-style-btn active" data-style="light">Street</button>
+        <button class="map-style-btn" data-style="satellite">Satellite</button>
+        <button class="map-style-btn" data-style="dark">Dark</button>
+      </div>
+
+      <!-- Floating Industry Legend Panel -->
+      <div class="map-legend-panel" id="map-legend-panel">
+        <div class="map-legend-header" id="map-legend-toggle">
+          <span class="map-legend-title">Industry Sectors</span>
+          <i data-lucide="chevron-down" id="legend-toggle-icon" style="width:13px; height:13px; color:var(--text-tertiary);"></i>
+        </div>
+        <div class="map-legend-grid" id="map-legend-items">
+          <div class="legend-item" data-industry="Automotive"><span class="legend-color-dot" style="background:#EF4444;"></span> Automotive</div>
+          <div class="legend-item" data-industry="Pharmaceuticals"><span class="legend-color-dot" style="background:#10B981;"></span> Pharma</div>
+          <div class="legend-item" data-industry="Electronics"><span class="legend-color-dot" style="background:#3B82F6;"></span> Electronics</div>
+          <div class="legend-item" data-industry="Aerospace & Defence"><span class="legend-color-dot" style="background:#8B5CF6;"></span> Aerospace</div>
+          <div class="legend-item" data-industry="Chemicals"><span class="legend-color-dot" style="background:#F59E0B;"></span> Chemicals</div>
+          <div class="legend-item" data-industry="Textiles"><span class="legend-color-dot" style="background:#EC4899;"></span> Textiles</div>
+          <div class="legend-item" data-industry="Steel & Metals"><span class="legend-color-dot" style="background:#6B7280;"></span> Metals</div>
+          <div class="legend-item" data-industry="Machinery"><span class="legend-color-dot" style="background:#14B8A6;"></span> Machinery</div>
         </div>
       </div>
 
@@ -471,13 +521,22 @@
             <div class="company-metric-value" id="modal-metric-emp">1,200+</div>
           </div>
         </div>
+
+        <!-- Scale Score Radar Chart -->
+        <div class="radar-card mt-3" id="modal-radar-card">
+          <div style="font-size:0.75rem; font-weight:600; color:var(--text-secondary); margin-bottom:var(--space-2);">Enterprise Capability Breakdown</div>
+          <div id="modal-radar-chart"></div>
+        </div>
       </div>
 
       <!-- Facilities List & Mini-Map -->
       <div class="company-section">
-        <div class="company-section-title">Mapped Facilities (<span id="modal-fac-count">1</span>)</div>
+        <div class="company-section-title">Mapped Physical Sites (<span id="modal-fac-count">1</span>)</div>
+        <div class="facility-tabs-nav" id="modal-facility-tabs">
+          <!-- Populated dynamically -->
+        </div>
         <div class="company-minimap" id="company-minimap"></div>
-        <div id="modal-facilities-list" style="display:flex; flex-direction:column; gap:var(--space-2);">
+        <div id="modal-facilities-list" style="display:flex; flex-direction:column; gap:var(--space-2); margin-top:var(--space-3);">
           <!-- Facility items populated dynamically -->
         </div>
       </div>

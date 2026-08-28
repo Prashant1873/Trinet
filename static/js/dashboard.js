@@ -1,5 +1,5 @@
 /**
- * TRINET (TM) - Dashboard Module
+ * TRINET™ - Dashboard Module
  * Discovery Coverage Matrix, KPI Analytics, and Live Discovery Triggers
  */
 
@@ -22,9 +22,13 @@ const TrinetDashboard = {
       const statsRes = await fetch('/api/stats');
       const stats = await statsRes.json();
       
-      document.getElementById('dash-companies-val').textContent = stats.total_companies.toLocaleString();
-      document.getElementById('dash-facilities-val').textContent = stats.total_facilities.toLocaleString();
-      document.getElementById('dash-exporters-val').textContent = stats.exporters.toLocaleString();
+      const compEl = document.getElementById('dash-companies-val');
+      const facEl = document.getElementById('dash-facilities-val');
+      const expEl = document.getElementById('dash-exporters-val');
+
+      if (compEl) compEl.textContent = stats.total_companies.toLocaleString();
+      if (facEl) facEl.textContent = stats.total_facilities.toLocaleString();
+      if (expEl) expEl.textContent = stats.exporters.toLocaleString();
 
       // 2. Discovery Coverage
       const covRes = await fetch('/api/discovery/coverage');
@@ -49,24 +53,24 @@ const TrinetDashboard = {
       let statusText = item.status || 'NOT_STARTED';
 
       if (score >= 60) {
-        statusColor = '#059669';
+        statusColor = '#00A06C';
       } else if (score >= 30) {
-        statusColor = '#D97706';
+        statusColor = '#F59E0B';
       }
 
       tr.innerHTML = `
         <td class="font-semibold text-left">${item.state}</td>
-        <td><span class="badge" style="background:${statusColor}20; color:${statusColor}">${statusText}</span></td>
+        <td><span class="badge" style="background:${statusColor}20; color:${statusColor}; font-weight:600;">${statusText}</span></td>
         <td>
           <div class="flex items-center justify-center gap-2">
-            <span class="font-semibold">${score}/100</span>
-            <div style="width:60px; height:6px; background:var(--neutral-light); border-radius:var(--radius-full); overflow:hidden;">
-              <div style="width:${score}%; height:100%; background:${statusColor};"></div>
+            <span class="font-semibold" style="font-variant-numeric: tabular-nums;">${score}/100</span>
+            <div style="width:70px; height:6px; background:var(--separator); border-radius:var(--radius-full); overflow:hidden;">
+              <div style="width:${score}%; height:100%; background:${statusColor}; border-radius:var(--radius-full);"></div>
             </div>
           </div>
         </td>
-        <td>${(item.companies_discovered || 0).toLocaleString()}</td>
-        <td>${(item.facilities_discovered || 0).toLocaleString()}</td>
+        <td style="font-variant-numeric: tabular-nums;">${(item.companies_discovered || 0).toLocaleString()}</td>
+        <td style="font-variant-numeric: tabular-nums;">${(item.facilities_discovered || 0).toLocaleString()}</td>
         <td>${item.search_count || 1}</td>
       `;
       tbody.appendChild(tr);
