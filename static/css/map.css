@@ -534,24 +534,73 @@
   top: 14px;
   left: 50%;
   transform: translateX(-50%);
-  width: min(560px, calc(100% - 280px));
-  max-width: 560px;
+  width: min(480px, calc(100% - 390px));
+  max-width: 480px;
   z-index: 30;
   transition: width var(--duration-normal) var(--ease-spring),
               box-shadow var(--duration-normal) var(--ease-spring);
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1100px) {
   .ai-chat-bar {
-    width: calc(100% - 220px);
+    width: calc(100% - 340px);
+    max-width: 420px;
   }
 }
 
 @media (max-width: 768px) {
   .ai-chat-bar {
     top: 56px;
+    left: 12px;
+    transform: none;
     width: calc(100% - 24px);
+    max-width: none;
   }
+}
+
+/* Floating Sidebar Expand Button (When left menu is collapsed) */
+.sidebar-expand-pill {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  z-index: 35;
+  display: none;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-btn);
+  background: var(--surface-heavy);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid var(--line);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: all var(--duration-fast) var(--ease-spring);
+  line-height: 1;
+}
+
+.sidebar-expand-pill i,
+.sidebar-expand-pill svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.sidebar-expand-pill:hover {
+  background: var(--surface-warm);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.sidebar-expand-pill:active {
+  transform: scale(0.95);
 }
 
 .ai-chat-input-wrapper {

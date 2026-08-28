@@ -126,21 +126,34 @@ const TrinetApp = {
 
   setupSidebarCollapse() {
     const toggleBtn = document.getElementById('sidebar-toggle-btn');
+    const headerToggleBtn = document.getElementById('header-sidebar-toggle-btn');
+    const expandBtn = document.getElementById('sidebar-expand-btn');
     const sidebar = document.getElementById('sidebar');
     const toggleIcon = document.getElementById('sidebar-toggle-icon');
 
-    if (toggleBtn && sidebar) {
-      toggleBtn.addEventListener('click', () => {
-        const isCollapsed = sidebar.classList.toggle('collapsed');
-        if (toggleIcon) {
-          toggleIcon.setAttribute('data-lucide', isCollapsed ? 'chevron-right' : 'chevron-left');
-          if (typeof lucide !== 'undefined') lucide.createIcons();
-        }
-        setTimeout(() => {
-          TrinetMap.map?.resize();
-        }, 350);
-      });
-    }
+    const toggleFn = () => {
+      if (!sidebar) return;
+      const isCollapsed = sidebar.classList.toggle('collapsed');
+      
+      if (toggleIcon) {
+        toggleIcon.setAttribute('data-lucide', isCollapsed ? 'chevron-right' : 'chevron-left');
+      }
+      
+      if (expandBtn) {
+        expandBtn.style.display = isCollapsed ? 'inline-flex' : 'none';
+      }
+
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+
+      setTimeout(() => {
+        TrinetMap.map?.resize();
+        TrinetMap.renderHierarchicalView();
+      }, 350);
+    };
+
+    toggleBtn?.addEventListener('click', toggleFn);
+    headerToggleBtn?.addEventListener('click', toggleFn);
+    expandBtn?.addEventListener('click', toggleFn);
   },
 
   setupKeyboardShortcuts() {

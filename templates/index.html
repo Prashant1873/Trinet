@@ -35,6 +35,9 @@
        ────────────────────────────────────── -->
   <header id="header" class="material-regular">
     <div class="header-brand">
+      <button class="btn-icon header-sidebar-toggle" id="header-sidebar-toggle-btn" title="Toggle Filters & Directory (Left Menu)">
+        <i data-lucide="panel-left"></i>
+      </button>
       <div class="header-logo">TRINET<span class="header-logo-tm">TM</span></div>
       <div class="header-tagline">India Industrial Intelligence</div>
     </div>
@@ -261,6 +264,12 @@
     <!-- ── MAP CONTAINER ── -->
     <main id="map-container">
       
+      <!-- Floating Sidebar Expand Button (Visible when sidebar is collapsed) -->
+      <button class="sidebar-expand-pill" id="sidebar-expand-btn" title="Open Left Menu (Filters & Directory)">
+        <i data-lucide="panel-left-open"></i>
+        <span>Show Menu</span>
+      </button>
+
       <!-- AI Natural Language Search Floating Bar -->
       <div class="ai-chat-bar" id="ai-chat-container">
         <div class="ai-chat-input-wrapper">
@@ -269,29 +278,29 @@
                  placeholder="Ask in natural language... e.g. 'Pharma factories in Hyderabad with 500+ workers'"
                  autocomplete="off">
           <button id="ai-chat-submit-btn" class="ai-chat-submit" title="Search with AI">
-            <i data-lucide="arrow-up" style="width:16px; height:16px;"></i>
+            <i data-lucide="arrow-up"></i>
           </button>
         </div>
 
         <!-- Quick Prompt Suggestions Carousel -->
         <div class="prompt-chips-carousel" id="prompt-chips-container">
           <button class="prompt-chip" data-prompt="Pharma factories in Hyderabad with 500+ workers">
-            <i data-lucide="pill" style="width:11px; height:11px;"></i> Pharma in Hyderabad
+            <i data-lucide="pill"></i> Pharma in Hyderabad
           </button>
           <button class="prompt-chip" data-prompt="Automotive component manufacturers in Pune">
-            <i data-lucide="cog" style="width:11px; height:11px;"></i> Auto CNC in Pune
+            <i data-lucide="cog"></i> Auto CNC in Pune
           </button>
           <button class="prompt-chip" data-prompt="Electronics and semiconductor manufacturing in Bengaluru">
-            <i data-lucide="cpu" style="width:11px; height:11px;"></i> Electronics in Bengaluru
+            <i data-lucide="cpu"></i> Electronics in Bengaluru
           </button>
           <button class="prompt-chip" data-prompt="Active exporters in Gujarat with large scale score">
-            <i data-lucide="plane-takeoff" style="width:11px; height:11px;"></i> Exporters in Gujarat
+            <i data-lucide="plane-takeoff"></i> Exporters in Gujarat
           </button>
           <button class="prompt-chip" data-prompt="Textile fabric manufacturers in Surat">
-            <i data-lucide="shirt" style="width:11px; height:11px;"></i> Textiles in Surat
+            <i data-lucide="shirt"></i> Textiles in Surat
           </button>
           <button class="prompt-chip" data-prompt="Steel and metals plants in Jamshedpur">
-            <i data-lucide="layers" style="width:11px; height:11px;"></i> Steel in Jamshedpur
+            <i data-lucide="layers"></i> Steel in Jamshedpur
           </button>
         </div>
 
@@ -349,6 +358,9 @@
         </button>
         <button class="map-control-btn" id="map-select-tool" title="Box Select Facilities for Export">
           <i data-lucide="crop"></i>
+        </button>
+        <button class="map-control-btn" id="map-fullscreen-btn" title="Toggle Fullscreen View">
+          <i data-lucide="maximize" id="map-fullscreen-icon"></i>
         </button>
       </div>
 
