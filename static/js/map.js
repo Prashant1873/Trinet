@@ -1,7 +1,7 @@
 /**
- * TRINET™ - Native WebGL Interactive Map Engine
- * Powered by MapLibre GL JS with native GPU-accelerated GeoJSON layers,
- * basemap switcher (Street/Satellite/Dark), interactive industry legend, and area selection.
+ * TRINET™ - Native Interactive Map Engine
+ * Powered by MapLibre GL JS with Apple-style HTML cluster markers with visible counts,
+ * instantaneous click expansion, zero drag interference, basemap switcher, and area selection.
  */
 
 const TrinetMap = {
@@ -12,6 +12,22 @@ const TrinetMap = {
   selectStartPoint: null,
   selectRectEl: null,
   geojsonData: { type: 'FeatureCollection', features: [] },
+  markers: [],
+
+  INDUSTRY_COLORS: {
+    'Automotive': '#EF4444',
+    'Aerospace & Defence': '#8B5CF6',
+    'Electronics': '#3B82F6',
+    'Pharmaceuticals': '#10B981',
+    'Chemicals': '#F59E0B',
+    'Textiles': '#EC4899',
+    'Food & Beverage': '#F97316',
+    'Steel & Metals': '#6B7280',
+    'Machinery': '#14B8A6',
+    'Industrial Equipment': '#0EA5E9',
+    'Plastics': '#A855F7',
+    'Packaging': '#84CC16'
+  },
 
   BASEMAP_SOURCES: {
     light: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -24,7 +40,6 @@ const TrinetMap = {
       container: 'map',
       style: {
         version: 8,
-        glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
         sources: {
           'basemap-tiles': {
             type: 'raster',
@@ -50,7 +65,6 @@ const TrinetMap = {
     });
 
     this.map.on('load', () => {
-      this.setupNativeLayers();
       this.setupControls();
       this.setupBasemapSwitcher();
       this.setupLegend();
@@ -58,181 +72,210 @@ const TrinetMap = {
       this.refreshMarkers();
     });
 
-    // Viewport count update on move
-    let moveTimeout;
-    this.map.on('moveend', () => {
-      clearTimeout(moveTimeout);
-      moveTimeout = setTimeout(() => {
-        this.updateViewportCount();
-      }, 200);
-    });
-  },
-
-  setupNativeLayers() {
-    if (this.map.getSource('facilities')) return;
-
-    // 1. Add GeoJSON Source with Native Clustering
-    this.map.addSource('facilities', {
-      type: 'geojson',
-      data: this.geojsonData,
-      cluster: true,
-      clusterMaxZoom: 14,
-      clusterRadius: 50
-    });
-
-    // 2. Clustered Circles Glow Layer (Apple translucent halo)
-    this.map.addLayer({
-      id: 'clusters-glow',
-      type: 'circle',
-      source: 'facilities',
-      filter: ['has', 'point_count'],
-      paint: {
-        'circle-color': '#00A06C',
-        'circle-radius': [
-          'step',
-          ['get', 'point_count'],
-          22,
-          20,
-          28,
-          60,
-          36,
-          150,
-          44
-        ],
-        'circle-opacity': 0.28
-      }
-    });
-
-    // 3. Clustered Circles Core Layer
-    this.map.addLayer({
-      id: 'clusters',
-      type: 'circle',
-      source: 'facilities',
-      filter: ['has', 'point_count'],
-      paint: {
-        'circle-color': [
-          'step',
-          ['get', 'point_count'],
-          '#00A06C',
-          20,
-          '#0B8A5D',
-          60,
-          '#076E4A',
-          150,
-          '#045237'
-        ],
-        'circle-radius': [
-          'step',
-          ['get', 'point_count'],
-          14,
-          20,
-          18,
-          60,
-          24,
-          150,
-          30
-        ],
-        'circle-stroke-width': 2.5,
-        'circle-stroke-color': '#FFFFFF',
-        'circle-opacity': 0.95
-      }
-    });
-
-    // 4. Unclustered Individual Factory Markers
-    this.map.addLayer({
-      id: 'unclustered-point',
-      type: 'circle',
-      source: 'facilities',
-      filter: ['!', ['has', 'point_count']],
-      paint: {
-        'circle-color': [
-          'match',
-          ['get', 'industry'],
-          'Automotive', '#EF4444',
-          'Aerospace & Defence', '#8B5CF6',
-          'Electronics', '#3B82F6',
-          'Pharmaceuticals', '#10B981',
-          'Chemicals', '#F59E0B',
-          'Textiles', '#EC4899',
-          'Food & Beverage', '#F97316',
-          'Steel & Metals', '#6B7280',
-          'Machinery', '#14B8A6',
-          'Industrial Equipment', '#0EA5E9',
-          'Plastics', '#A855F7',
-          'Packaging', '#84CC16',
-          '#00A06C'
-        ],
-        'circle-radius': 7,
-        'circle-stroke-width': 2,
-        'circle-stroke-color': '#FFFFFF',
-        'circle-opacity': 0.95
-      }
-    });
-
-    // ── Click Handlers for Clusters ──
-    const handleClusterClick = (e) => {
-      const features = this.map.queryRenderedFeatures(e.point, { layers: ['clusters', 'clusters-glow'] });
-      if (!features.length) return;
-      
-      const feature = features[0];
-      const clusterId = feature.properties.cluster_id;
-      const coordinates = feature.geometry.coordinates.slice();
-      
-      const source = this.map.getSource('facilities');
-      if (source && clusterId !== undefined) {
-        source.getClusterExpansionZoom(clusterId, (err, zoom) => {
-          const targetZoom = (!err && zoom) ? zoom : (this.map.getZoom() + 2.5);
-          this.map.easeTo({
-            center: coordinates,
-            zoom: Math.min(targetZoom, 16),
-            duration: 400
-          });
-        });
-      } else {
-        this.map.easeTo({
-          center: coordinates,
-          zoom: Math.min(this.map.getZoom() + 2.5, 16),
-          duration: 400
-        });
-      }
-    };
-
-    this.map.on('click', 'clusters', handleClusterClick);
-    this.map.on('click', 'clusters-glow', handleClusterClick);
-
-    // ── Click Handler for Individual Factory Points ──
-    this.map.on('click', 'unclustered-point', (e) => {
-      const features = this.map.queryRenderedFeatures(e.point, { layers: ['unclustered-point'] });
-      if (!features.length) return;
-      const feat = features[0];
-      const coords = feat.geometry.coordinates.slice();
-      const props = feat.properties;
-
-      while (Math.abs(e.lngLat.lng - coords[0]) > 180) {
-        coords[0] += e.lngLat.lng > coords[0] ? 360 : -360;
-      }
-
-      this.showFacilityPopup(props, coords);
-    });
-
-    // ── Dismiss popup on background map click ──
-    this.map.on('click', (e) => {
-      const features = this.map.queryRenderedFeatures(e.point, {
-        layers: ['clusters', 'clusters-glow', 'unclustered-point']
-      });
-      if (!features.length && this.currentPopup) {
+    // Dismiss popup on background map canvas click
+    this.map.on('click', () => {
+      if (this.currentPopup) {
         this.currentPopup.remove();
         this.currentPopup = null;
       }
     });
 
-    // Cursor Styling on Hover
-    this.map.on('mouseenter', 'clusters', () => { this.map.getCanvas().style.cursor = 'pointer'; });
-    this.map.on('mouseleave', 'clusters', () => { this.map.getCanvas().style.cursor = ''; });
-    this.map.on('mouseenter', 'clusters-glow', () => { this.map.getCanvas().style.cursor = 'pointer'; });
-    this.map.on('mouseleave', 'clusters-glow', () => { this.map.getCanvas().style.cursor = ''; });
-    this.map.on('mouseenter', 'unclustered-point', () => { this.map.getCanvas().style.cursor = 'pointer'; });
-    this.map.on('mouseleave', 'unclustered-point', () => { this.map.getCanvas().style.cursor = ''; });
+    // Re-cluster markers on zoom or pan end
+    let updateTimeout;
+    this.map.on('moveend', () => {
+      clearTimeout(updateTimeout);
+      updateTimeout = setTimeout(() => {
+        this.renderClustersAndPoints();
+        this.updateViewportCount();
+      }, 120);
+    });
+  },
+
+  async refreshMarkers() {
+    const filters = typeof TrinetFilters !== 'undefined' ? TrinetFilters.getFilterPayload() : {};
+    const queryParams = new URLSearchParams(filters);
+
+    try {
+      const res = await fetch(`/api/facilities/geojson?${queryParams}`);
+      const geojson = await res.json();
+      this.geojsonData = geojson;
+      this.renderClustersAndPoints();
+      this.updateViewportCount();
+    } catch (e) {
+      console.error('Failed to load map GeoJSON data', e);
+    }
+  },
+
+  renderClustersAndPoints() {
+    if (!this.map || !this.geojsonData || !this.geojsonData.features) return;
+
+    // Remove existing markers
+    this.markers.forEach(m => m.remove());
+    this.markers = [];
+
+    const zoom = this.map.getZoom();
+    const bounds = this.map.getBounds();
+    const features = this.geojsonData.features;
+
+    // Filter features in visible viewport
+    const visibleFeatures = features.filter(f => {
+      const [lng, lat] = f.geometry.coordinates;
+      return lat >= bounds.getSouth() - 0.5 && lat <= bounds.getNorth() + 0.5 &&
+             lng >= bounds.getWest() - 0.5 && lng <= bounds.getEast() + 0.5;
+    });
+
+    // If high zoom (>= 13), render individual factory pins
+    if (zoom >= 13 || visibleFeatures.length <= 25) {
+      visibleFeatures.forEach(feat => {
+        const [lng, lat] = feat.geometry.coordinates;
+        const props = feat.properties;
+        const color = this.INDUSTRY_COLORS[props.industry] || '#00A06C';
+
+        const el = document.createElement('div');
+        el.className = 'trinet-pin';
+        el.style.setProperty('--pin-color', color);
+        el.innerHTML = `<div class="trinet-pin-dot"></div>`;
+        el.title = `${props.company_name} - ${props.city}`;
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.showFacilityPopup(props, [lng, lat]);
+        });
+
+        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+          .setLngLat([lng, lat])
+          .addTo(this.map);
+
+        this.markers.push(marker);
+      });
+      return;
+    }
+
+    // Grid-based spatial clustering
+    const clusterRadiusPx = 55;
+    const worldWidth = 360 / (Math.pow(2, zoom) * (512 / clusterRadiusPx));
+    const grid = {};
+
+    visibleFeatures.forEach(feat => {
+      const [lng, lat] = feat.geometry.coordinates;
+      const gx = Math.floor(lng / worldWidth);
+      const gy = Math.floor(lat / worldWidth);
+      const key = `${gx}_${gy}`;
+      if (!grid[key]) grid[key] = [];
+      grid[key].push(feat);
+    });
+
+    Object.values(grid).forEach(group => {
+      if (group.length === 1) {
+        const feat = group[0];
+        const [lng, lat] = feat.geometry.coordinates;
+        const props = feat.properties;
+        const color = this.INDUSTRY_COLORS[props.industry] || '#00A06C';
+
+        const el = document.createElement('div');
+        el.className = 'trinet-pin';
+        el.style.setProperty('--pin-color', color);
+        el.innerHTML = `<div class="trinet-pin-dot"></div>`;
+        el.title = `${props.company_name} - ${props.city}`;
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.showFacilityPopup(props, [lng, lat]);
+        });
+
+        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+          .setLngLat([lng, lat])
+          .addTo(this.map);
+
+        this.markers.push(marker);
+      } else {
+        // Compute cluster centroid
+        const avgLng = group.reduce((sum, f) => sum + f.geometry.coordinates[0], 0) / group.length;
+        const avgLat = group.reduce((sum, f) => sum + f.geometry.coordinates[1], 0) / group.length;
+        const count = group.length;
+
+        let sizeClass = 'trinet-cluster-sm';
+        if (count >= 150) sizeClass = 'trinet-cluster-xl';
+        else if (count >= 60) sizeClass = 'trinet-cluster-lg';
+        else if (count >= 20) sizeClass = 'trinet-cluster-md';
+
+        const el = document.createElement('div');
+        el.className = `trinet-cluster ${sizeClass}`;
+        el.innerHTML = `
+          <div class="trinet-cluster-halo"></div>
+          <div class="trinet-cluster-body">
+            <span class="trinet-cluster-count">${count >= 1000 ? (count/1000).toFixed(1) + 'k' : count}</span>
+          </div>
+        `;
+        el.title = `${count} manufacturing facilities. Click to expand.`;
+
+        // Instant click expansion without drag interference
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const nextZoom = Math.min(this.map.getZoom() + 2.4, 15);
+          this.map.flyTo({
+            center: [avgLng, avgLat],
+            zoom: nextZoom,
+            duration: 400,
+            essential: true
+          });
+        });
+
+        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+          .setLngLat([avgLng, avgLat])
+          .addTo(this.map);
+
+        this.markers.push(marker);
+      }
+    });
+  },
+
+  showFacilityPopup(props, coordinates) {
+    if (this.currentPopup) {
+      this.currentPopup.remove();
+      this.currentPopup = null;
+    }
+
+    const popupHtml = `
+      <div class="facility-popup">
+        <div class="facility-popup-header">
+          <div class="facility-popup-company">${props.company_name}</div>
+          <div class="facility-popup-name">${props.facility_name || 'Manufacturing Plant'}</div>
+        </div>
+        <div class="facility-popup-body">
+          <div class="facility-popup-row">
+            <span class="facility-popup-label">Industry:</span>
+            <span class="badge badge-primary">${props.industry || 'General'}</span>
+          </div>
+          <div class="facility-popup-row">
+            <span class="facility-popup-label">Location:</span>
+            <span class="facility-popup-value">${props.city}, ${props.state}</span>
+          </div>
+          <div class="facility-popup-row">
+            <span class="facility-popup-label">Scale Score:</span>
+            <span class="facility-popup-value text-accent font-semibold">${props.scale_score || 0}/100</span>
+          </div>
+          <div class="facility-popup-row">
+            <span class="facility-popup-label">Address:</span>
+            <span class="facility-popup-value" style="font-size:0.75rem; color:var(--text-secondary);">${props.address || ''}</span>
+          </div>
+        </div>
+        <div class="facility-popup-actions">
+          <button class="btn btn-primary btn-sm w-full" onclick="TrinetCompany.openModal('${props.company_id}')">
+            View Company Intelligence
+          </button>
+        </div>
+      </div>
+    `;
+
+    this.currentPopup = new maplibregl.Popup({
+      offset: [0, -12],
+      closeOnClick: true,
+      closeButton: true
+    })
+      .setLngLat(coordinates)
+      .setHTML(popupHtml)
+      .addTo(this.map);
   },
 
   setupBasemapSwitcher() {
@@ -250,18 +293,11 @@ const TrinetMap = {
     this.currentBasemap = styleKey;
     const tileUrl = this.BASEMAP_SOURCES[styleKey] || this.BASEMAP_SOURCES.light;
     
-    // Safely remove layers if present
-    ['unclustered-point', 'clusters', 'clusters-glow', 'basemap-layer'].forEach(layerId => {
-      if (this.map.getLayer(layerId)) {
-        this.map.removeLayer(layerId);
-      }
-    });
-
+    if (this.map.getLayer('basemap-layer')) {
+      this.map.removeLayer('basemap-layer');
+    }
     if (this.map.getSource('basemap-tiles')) {
       this.map.removeSource('basemap-tiles');
-    }
-    if (this.map.getSource('facilities')) {
-      this.map.removeSource('facilities');
     }
 
     this.map.addSource('basemap-tiles', {
@@ -277,11 +313,6 @@ const TrinetMap = {
       minzoom: 0,
       maxzoom: 19
     });
-
-    this.setupNativeLayers();
-    if (this.map.getSource('facilities')) {
-      this.map.getSource('facilities').setData(this.geojsonData);
-    }
   },
 
   setupLegend() {
@@ -334,69 +365,6 @@ const TrinetMap = {
     document.getElementById('map-cancel-selection-btn')?.addEventListener('click', () => {
       this.cancelSelection();
     });
-  },
-
-  async refreshMarkers() {
-    if (!this.map) return;
-
-    const filters = typeof TrinetFilters !== 'undefined' ? TrinetFilters.getFilterPayload() : {};
-    const queryParams = new URLSearchParams(filters);
-
-    try {
-      const res = await fetch(`/api/facilities/geojson?${queryParams}`);
-      const geojson = await res.json();
-      
-      this.geojsonData = geojson;
-
-      if (this.map && this.map.getSource('facilities')) {
-        this.map.getSource('facilities').setData(geojson);
-      }
-
-      this.updateViewportCount();
-    } catch (e) {
-      console.error('Failed to load map GeoJSON data', e);
-    }
-  },
-
-  showFacilityPopup(props, coordinates) {
-    if (this.currentPopup) this.currentPopup.remove();
-
-    const popupHtml = `
-      <div class="facility-popup">
-        <div class="facility-popup-header">
-          <div class="facility-popup-company">${props.company_name}</div>
-          <div class="facility-popup-name">${props.facility_name || 'Manufacturing Plant'}</div>
-        </div>
-        <div class="facility-popup-body">
-          <div class="facility-popup-row">
-            <span class="facility-popup-label">Industry:</span>
-            <span class="badge badge-primary">${props.industry || 'General'}</span>
-          </div>
-          <div class="facility-popup-row">
-            <span class="facility-popup-label">Location:</span>
-            <span class="facility-popup-value">${props.city}, ${props.state}</span>
-          </div>
-          <div class="facility-popup-row">
-            <span class="facility-popup-label">Scale Score:</span>
-            <span class="facility-popup-value text-accent font-semibold">${props.scale_score || 0}/100</span>
-          </div>
-          <div class="facility-popup-row">
-            <span class="facility-popup-label">Address:</span>
-            <span class="facility-popup-value" style="font-size:0.75rem; color:var(--text-secondary);">${props.address || ''}</span>
-          </div>
-        </div>
-        <div class="facility-popup-actions">
-          <button class="btn btn-primary btn-sm w-full" onclick="TrinetCompany.openModal('${props.company_id}')">
-            View Company Intelligence
-          </button>
-        </div>
-      </div>
-    `;
-
-    this.currentPopup = new maplibregl.Popup({ offset: [0, -10], closeOnClick: true })
-      .setLngLat(coordinates)
-      .setHTML(popupHtml)
-      .addTo(this.map);
   },
 
   flyToLocation(center, zoom = 11) {
