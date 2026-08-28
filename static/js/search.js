@@ -82,7 +82,7 @@ const TrinetSearch = {
 
       // Fly to Map Location if indicated
       if (data.mapAction && data.mapAction.center) {
-        TrinetMap.flyToLocation(data.mapAction.center, data.mapAction.zoom || 11);
+        TrinetMap.flyToLocation(data.mapAction.center, data.mapAction.zoom || 12.5);
       }
 
       // Show AI Explanation Box

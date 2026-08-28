@@ -126,7 +126,7 @@ def rule_based_fallback(query):
         if city_name in q_lower:
             cap_city = city_name.capitalize()
             filters['city'] = cap_city
-            map_action = {"center": coords, "zoom": 11}
+            map_action = {"center": coords, "zoom": 12.5}
             applied_desc.append(f"Location: {cap_city}")
             break
             

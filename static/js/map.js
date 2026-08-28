@@ -117,7 +117,7 @@ const TrinetMap = {
     });
   },
 
-  async refreshMarkers() {
+  async refreshMarkers(autoFit = false) {
     const filters = typeof TrinetFilters !== 'undefined' ? TrinetFilters.getFilterPayload() : {};
     const queryParams = new URLSearchParams(filters);
 
@@ -125,11 +125,33 @@ const TrinetMap = {
       const res = await fetch(`/api/facilities/geojson?${queryParams}`);
       const geojson = await res.json();
       this.geojsonData = geojson;
+      
+      // Auto-fit to matching factories if a city/state/search filter is active
+      if (autoFit || (filters.city && geojson.features.length > 0) || (filters.search && geojson.features.length > 0 && geojson.features.length < 200)) {
+        this.fitToFeatures(geojson.features);
+      }
+
       this.renderHierarchicalView();
       this.updateViewportCount();
     } catch (e) {
       console.error('Failed to load map GeoJSON data', e);
     }
+  },
+
+  fitToFeatures(features) {
+    if (!this.map || !features || !features.length) return;
+    if (features.length === 1) {
+      const [lng, lat] = features[0].geometry.coordinates;
+      this.flyToLocation([lng, lat], 13.5);
+      return;
+    }
+    const bounds = new maplibregl.LngLatBounds();
+    features.forEach(f => bounds.extend(f.geometry.coordinates));
+    this.map.fitBounds(bounds, {
+      padding: { top: 90, bottom: 90, left: 90, right: 90 },
+      maxZoom: 13.5,
+      duration: 500
+    });
   },
 
   renderHierarchicalView() {
@@ -142,11 +164,13 @@ const TrinetMap = {
     const zoom = this.map.getZoom();
     const bounds = this.map.getBounds();
     const allFeatures = this.geojsonData.features;
+    const isFilteredByCity = typeof TrinetFilters !== 'undefined' && (!!TrinetFilters.state.city || !!TrinetFilters.state.search);
 
     // ────────────────────────────────────────────────────────
     // LEVEL 1: Zoom < 6.5 (National Expanded Overview: 1 per State)
+    // Only active on broad all-India browse without a specific city/search query
     // ────────────────────────────────────────────────────────
-    if (zoom < 6.5) {
+    if (zoom < 6.5 && !isFilteredByCity && allFeatures.length > 200) {
       const stateGroups = {};
       allFeatures.forEach(f => {
         const state = f.properties.state || 'Other';
@@ -159,7 +183,6 @@ const TrinetMap = {
         let coords = this.STATE_CENTROIDS[stateName];
         
         if (!coords) {
-          // Fallback to average coords
           const avgLng = feats.reduce((s, f) => s + f.geometry.coordinates[0], 0) / count;
           const avgLat = feats.reduce((s, f) => s + f.geometry.coordinates[1], 0) / count;
           coords = [avgLng, avgLat];
@@ -200,10 +223,15 @@ const TrinetMap = {
     });
 
     // ────────────────────────────────────────────────────────
-    // LEVEL 3: Zoom >= 11.5 (Granular Precision: Teardrop Pins)
+    // LEVEL 3: Granular Precision: Direct Teardrop Factory Pins
+    // Show direct pins when:
+    // 1. A city or search filter is active
+    // 2. Or zoom >= 9.5
+    // 3. Or visible/total facilities <= 120
     // ────────────────────────────────────────────────────────
-    if (zoom >= 11.5 || visibleFeatures.length <= 30) {
-      visibleFeatures.forEach(feat => {
+    if (isFilteredByCity || zoom >= 9.5 || visibleFeatures.length <= 120 || allFeatures.length <= 120) {
+      const displayFeatures = isFilteredByCity ? allFeatures : visibleFeatures;
+      displayFeatures.forEach(feat => {
         const [lng, lat] = feat.geometry.coordinates;
         const props = feat.properties;
         const facType = (props.facility_type || 'FACTORY').toUpperCase();
@@ -234,7 +262,7 @@ const TrinetMap = {
     }
 
     // ────────────────────────────────────────────────────────
-    // LEVEL 2: Zoom 6.5 to 11.5 (Districts / Industrial Cities)
+    // LEVEL 2: Regional View (6.5 <= Zoom < 9.5 on broad all-India browse)
     // ────────────────────────────────────────────────────────
     const cityGroups = {};
     visibleFeatures.forEach(feat => {
