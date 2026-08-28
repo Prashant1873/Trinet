@@ -68,9 +68,9 @@ def get_companies():
     params = []
     
     if search:
-        where_clauses.append("(c.company_name LIKE ? OR c.normalized_name LIKE ? OR c.headquarters_city LIKE ? OR c.industry LIKE ?)")
+        where_clauses.append("(c.company_name LIKE ? OR c.normalized_name LIKE ? OR c.id IN (SELECT company_id FROM facilities WHERE facility_name LIKE ? OR address LIKE ?) OR c.headquarters_city LIKE ? OR c.industry LIKE ?)")
         search_pattern = f"%{search}%"
-        params.extend([search_pattern, search_pattern, search_pattern, search_pattern])
+        params.extend([search_pattern, search_pattern, search_pattern, search_pattern, search_pattern, search_pattern])
         
     if industry:
         where_clauses.append("c.industry = ?")
@@ -249,9 +249,9 @@ def get_facilities_geojson():
     params = []
     
     if search:
-        where_clauses.append("(c.company_name LIKE ? OR c.normalized_name LIKE ? OR f.city LIKE ? OR c.industry LIKE ?)")
+        where_clauses.append("(c.company_name LIKE ? OR c.normalized_name LIKE ? OR f.facility_name LIKE ? OR f.address LIKE ? OR f.city LIKE ? OR c.industry LIKE ?)")
         sp = f"%{search}%"
-        params.extend([sp, sp, sp, sp])
+        params.extend([sp, sp, sp, sp, sp, sp])
     if industry:
         where_clauses.append("c.industry = ?")
         params.append(industry)

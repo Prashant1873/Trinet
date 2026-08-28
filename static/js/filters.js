@@ -224,6 +224,7 @@ const TrinetFilters = {
     container.innerHTML = '';
     const activeList = [];
 
+    if (this.state.search) activeList.push({ key: 'search', label: `Search / Factory: "${this.state.search}"` });
     if (this.state.industry) activeList.push({ key: 'industry', label: `Industry: ${this.state.industry}` });
     if (this.state.state) activeList.push({ key: 'state', label: `State: ${this.state.state}` });
     if (this.state.city) activeList.push({ key: 'city', label: `City: ${this.state.city}` });
@@ -264,7 +265,9 @@ const TrinetFilters = {
   },
 
   clearFilterKey(key) {
-    if (key === 'industry') {
+    if (key === 'search') {
+      this.state.search = '';
+    } else if (key === 'industry') {
       this.state.industry = '';
       const el = document.getElementById('filter-industry');
       if (el) el.value = '';

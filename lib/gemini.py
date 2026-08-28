@@ -85,6 +85,7 @@ SYSTEM_PROMPT = """You are TRINET AI Search Assistant for Indian Manufacturing.
 Your job is to parse natural language queries from users into a structured JSON filter object and map action.
 
 Available Filters:
+- search: Exact or partial name of factory, company, unit, plant, or specific manufacturer keyword (e.g. "Ace Gears", "Tata Motors", "Bharat Forge", "Thermax", "Kirloskar", "Shree Precision") if searching for a specific enterprise/facility, or null.
 - industry: One of ["Automotive", "Aerospace & Defence", "Electronics", "Semiconductors", "Pharmaceuticals", "Chemicals", "Textiles", "Food & Beverage", "Steel & Metals", "Machinery", "Industrial Equipment", "Plastics", "Packaging", "Energy Equipment", "Consumer Goods", "Construction Materials", "Furniture", "Medical Devices"] or null.
 - state: Full Indian state name (e.g. "Maharashtra", "Gujarat", "Tamil Nadu", "Karnataka", "Telangana", "Haryana", "Punjab", "Uttar Pradesh", "West Bengal", "Rajasthan") or null.
 - city: City name (e.g. "Pune", "Chakan", "Hyderabad", "Bengaluru", "Ahmedabad", "Chennai", "Gurugram", "Manesar", "Surat", "Coimbatore", "Ludhiana", "Jamshedpur") or null.
@@ -98,11 +99,10 @@ Available Filters:
 - capability: Manufacturing capability (e.g. "Fabrication", "CNC Machining", "Casting", "Forging", "Welding", "Injection Moulding", "Stamping", "Assembly") or null.
 - isExporter: true / false / null
 - isPublicCompany: true / false / null
-- search: generic text query if any, or null
 
 Map Action:
-- center: [longitude, latitude] of the target city/state, or null
-- zoom: target map zoom level (e.g. 10-12 for city, 6-7 for state, null for national)
+- center: [longitude, latitude] of the target factory/city/state, or null
+- zoom: target map zoom level (e.g. 14-16 for specific factory/plant, 11-12 for city, 6-7 for state, null for national)
 
 Output format must be ONLY raw JSON without markdown code fences:
 {
@@ -115,10 +115,49 @@ Output format must be ONLY raw JSON without markdown code fences:
 
 def rule_based_fallback(query):
     """Fallback NLP parser if AI API fails or key is unavailable."""
+    from lib.database import query_one
     q_lower = query.lower()
     filters = {}
     map_action = None
     applied_desc = []
+    
+    # 0. Check if query is looking for a specific factory or company name directly
+    clean_target = re.sub(r'^(find|search for|search|show me|locate|where is|get|look for)\s+', '', query, flags=re.IGNORECASE).strip()
+    clean_target = re.sub(r'\s+(factory|plant|facility|works|unit|industries|corp|ltd)$', '', clean_target, flags=re.IGNORECASE).strip()
+    
+    matched_entity = None
+    if len(clean_target) >= 3 and clean_target.lower() not in ['all', 'india', 'manufacturer', 'manufacturers', 'companies', 'factories', 'units', 'plants']:
+        matched_entity = query_one("""
+            SELECT c.id AS company_id, c.company_name, c.industry, c.headquarters_city, c.headquarters_state,
+                   f.id AS facility_id, f.facility_name, f.latitude, f.longitude, f.address, f.city, f.state
+            FROM companies c
+            LEFT JOIN facilities f ON c.id = f.company_id
+            WHERE c.company_name LIKE ? OR c.normalized_name LIKE ? OR f.facility_name LIKE ?
+            ORDER BY c.scale_score DESC
+            LIMIT 1
+        """, (f"%{clean_target}%", f"%{clean_target}%", f"%{clean_target}%"))
+        
+    if matched_entity and matched_entity.get('latitude') and matched_entity.get('longitude'):
+        filters['search'] = clean_target
+        if matched_entity.get('industry'):
+            filters['industry'] = matched_entity['industry']
+        map_action = {
+            "center": [matched_entity['longitude'], matched_entity['latitude']],
+            "zoom": 14.5
+        }
+        name_display = matched_entity['facility_name'] or matched_entity['company_name']
+        loc_display = matched_entity.get('city') or matched_entity.get('headquarters_city') or 'India'
+        explanation = f"Located {name_display} ({matched_entity['company_name']}) in {loc_display}."
+        return {
+            "filters": filters,
+            "mapAction": map_action,
+            "explanation": explanation,
+            "suggestedFollowUps": [
+                f"Show all facilities for {matched_entity['company_name']}",
+                f"Show suppliers near {loc_display}",
+                "Show verified manufacturers in this region"
+            ]
+        }
     
     # Check industries
     industry_map = {
@@ -222,6 +261,11 @@ def rule_based_fallback(query):
         filters['minEmployees'] = int(emp_match.group(1))
         applied_desc.append(f"Min Employees: {emp_match.group(1)}")
         
+    # If no industry or location was explicitly matched, treat the query as a keyword/factory search
+    if not filters.get('industry') and not filters.get('city') and not filters.get('scale') and clean_target:
+        filters['search'] = clean_target
+        applied_desc.append(f"Factory / Keyword: '{clean_target}'")
+
     explanation = f"Showing manufacturers matching: {', '.join(applied_desc)}" if applied_desc else f"Searching for '{query}'"
     
     return {
