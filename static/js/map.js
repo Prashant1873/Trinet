@@ -24,6 +24,7 @@ const TrinetMap = {
       container: 'map',
       style: {
         version: 8,
+        glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
         sources: {
           'basemap-tiles': {
             type: 'raster',
@@ -154,32 +155,49 @@ const TrinetMap = {
           'Packaging', '#84CC16',
           '#00A06C'
         ],
-        'circle-radius': 7,
-        'circle-stroke-width': 2,
+        'circle-radius': 8,
+        'circle-stroke-width': 2.5,
         'circle-stroke-color': '#FFFFFF',
         'circle-opacity': 0.95
       }
     });
 
-    // ── Click Handlers ──
-    this.map.on('click', 'clusters', (e) => {
-      const features = this.map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+    // ── Click Handlers for Clusters & Count Label ──
+    const handleClusterClick = (e) => {
+      const features = this.map.queryRenderedFeatures(e.point, { layers: ['clusters', 'cluster-count'] });
       if (!features.length) return;
       
-      const clusterId = features[0].properties.cluster_id;
-      this.map.getSource('facilities').getClusterExpansionZoom(clusterId, (err, zoom) => {
-        if (err) return;
+      const feature = features[0];
+      const clusterId = feature.properties.cluster_id;
+      const coordinates = feature.geometry.coordinates.slice();
+      
+      const source = this.map.getSource('facilities');
+      if (source && clusterId !== undefined) {
+        source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+          const targetZoom = (!err && zoom) ? zoom : (this.map.getZoom() + 2.5);
+          this.map.easeTo({
+            center: coordinates,
+            zoom: Math.min(targetZoom, 16),
+            duration: 400
+          });
+        });
+      } else {
         this.map.easeTo({
-          center: features[0].geometry.coordinates,
-          zoom: Math.min(zoom, 16),
+          center: coordinates,
+          zoom: Math.min(this.map.getZoom() + 2.5, 16),
           duration: 400
         });
-      });
-    });
+      }
+    };
 
+    this.map.on('click', 'clusters', handleClusterClick);
+    this.map.on('click', 'cluster-count', handleClusterClick);
+
+    // ── Click Handler for Individual Factory Points ──
     this.map.on('click', 'unclustered-point', (e) => {
-      if (!e.features.length) return;
-      const feat = e.features[0];
+      const features = this.map.queryRenderedFeatures(e.point, { layers: ['unclustered-point'] });
+      if (!features.length) return;
+      const feat = features[0];
       const coords = feat.geometry.coordinates.slice();
       const props = feat.properties;
 
@@ -193,6 +211,8 @@ const TrinetMap = {
     // Cursor Styling on Hover
     this.map.on('mouseenter', 'clusters', () => { this.map.getCanvas().style.cursor = 'pointer'; });
     this.map.on('mouseleave', 'clusters', () => { this.map.getCanvas().style.cursor = ''; });
+    this.map.on('mouseenter', 'cluster-count', () => { this.map.getCanvas().style.cursor = 'pointer'; });
+    this.map.on('mouseleave', 'cluster-count', () => { this.map.getCanvas().style.cursor = ''; });
     this.map.on('mouseenter', 'unclustered-point', () => { this.map.getCanvas().style.cursor = 'pointer'; });
     this.map.on('mouseleave', 'unclustered-point', () => { this.map.getCanvas().style.cursor = ''; });
   },
