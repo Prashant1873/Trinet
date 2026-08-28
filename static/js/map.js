@@ -132,13 +132,16 @@ const TrinetMap = {
 
     // Hierarchical marker rendering on zoom or pan
     let updateTimeout;
-    this.map.on('moveend', () => {
+    const onMapChange = () => {
       clearTimeout(updateTimeout);
       updateTimeout = setTimeout(() => {
         this.renderHierarchicalView();
         this.updateViewportCount();
-      }, 100);
-    });
+      }, 50);
+    };
+
+    this.map.on('moveend', onMapChange);
+    this.map.on('zoomend', onMapChange);
   },
 
   async refreshMarkers(autoFit = false) {

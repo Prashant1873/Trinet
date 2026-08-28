@@ -64,15 +64,13 @@
    ────────────────────────────────────── */
 
 .trinet-cluster-node {
-  position: relative;
+  position: absolute !important;
   cursor: pointer;
   user-select: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
   z-index: 10;
   transition: z-index 0.12s ease;
+  pointer-events: auto;
 }
 
 .trinet-cluster-node:hover {
@@ -260,16 +258,17 @@
    ────────────────────────────────────── */
 
 .trinet-map-pin {
+  position: absolute !important;
   cursor: pointer;
   width: 28px;
   height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.35));
   transition: transform 0.18s cubic-bezier(0.25, 1, 0.5, 1);
   transform-origin: bottom center;
+  pointer-events: auto;
 }
 
 .trinet-map-pin:hover {
