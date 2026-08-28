@@ -125,19 +125,13 @@ const TrinetApp = {
   },
 
   setupSidebarCollapse() {
-    const toggleBtn = document.getElementById('sidebar-toggle-btn');
     const headerToggleBtn = document.getElementById('header-sidebar-toggle-btn');
     const expandBtn = document.getElementById('sidebar-expand-btn');
     const sidebar = document.getElementById('sidebar');
-    const toggleIcon = document.getElementById('sidebar-toggle-icon');
 
     const toggleFn = () => {
       if (!sidebar) return;
       const isCollapsed = sidebar.classList.toggle('collapsed');
-      
-      if (toggleIcon) {
-        toggleIcon.setAttribute('data-lucide', isCollapsed ? 'chevron-right' : 'chevron-left');
-      }
       
       if (expandBtn) {
         expandBtn.style.display = isCollapsed ? 'inline-flex' : 'none';
@@ -151,7 +145,6 @@ const TrinetApp = {
       }, 350);
     };
 
-    toggleBtn?.addEventListener('click', toggleFn);
     headerToggleBtn?.addEventListener('click', toggleFn);
     expandBtn?.addEventListener('click', toggleFn);
   },
