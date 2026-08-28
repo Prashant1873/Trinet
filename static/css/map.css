@@ -470,14 +470,14 @@
   box-shadow: 0 4px 12px rgba(0, 160, 108, 0.3);
 }
 
-/* Viewport count badge (Bottom-Center) */
+/* Viewport count badge (Bottom-Center Unified 7px-radius) */
 .map-viewport-count {
   position: absolute;
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 6px 16px;
-  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  border-radius: var(--radius-btn-sm);
   font-size: 0.75rem;
   font-weight: 650;
   letter-spacing: 0.01em;
@@ -601,8 +601,8 @@
   width: 32px;
   height: 32px;
   border: none;
-  border-radius: var(--radius-full);
-  background: var(--primary);
+  border-radius: var(--radius-btn-sm);
+  background: var(--ink);
   color: white;
   cursor: pointer;
   display: flex;
@@ -617,6 +617,7 @@
 
 .ai-chat-submit.has-query {
   opacity: 1;
+  background: var(--primary);
 }
 
 .ai-chat-submit:hover { background: var(--primary-hover); }
