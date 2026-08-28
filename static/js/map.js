@@ -154,6 +154,35 @@ const TrinetMap = {
     });
   },
 
+  computeSectorDistribution(feats) {
+    const counts = {};
+    feats.forEach(f => {
+      const ind = f.properties.industry || 'Other';
+      counts[ind] = (counts[ind] || 0) + 1;
+    });
+
+    const total = feats.length;
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+    let barHtml = '<div class="trinet-sector-bar">';
+    const summaryParts = [];
+
+    sorted.forEach(([ind, cnt]) => {
+      const pct = ((cnt / total) * 100).toFixed(1);
+      const color = this.INDUSTRY_COLORS[ind] || '#00A06C';
+      barHtml += `<div class="trinet-sector-segment" style="width:${pct}%; background:${color};" title="${ind}: ${cnt} (${Math.round((cnt/total)*100)}%)"></div>`;
+      if (summaryParts.length < 3) {
+        summaryParts.push(`${ind} ${Math.round((cnt/total)*100)}%`);
+      }
+    });
+    barHtml += '</div>';
+
+    return {
+      barHtml,
+      summary: summaryParts.join(' · ')
+    };
+  },
+
   renderHierarchicalView() {
     if (!this.map || !this.geojsonData || !this.geojsonData.features) return;
 
@@ -188,13 +217,18 @@ const TrinetMap = {
           coords = [avgLng, avgLat];
         }
 
+        const sectorData = this.computeSectorDistribution(feats);
+
         const el = document.createElement('div');
         el.className = 'trinet-badge-cluster trinet-badge-state';
         el.innerHTML = `
-          <span class="trinet-badge-label">${stateName}</span>
-          <span class="trinet-badge-count">${count}</span>
+          <div class="trinet-badge-header">
+            <span class="trinet-badge-label">${stateName}</span>
+            <span class="trinet-badge-count">${count}</span>
+          </div>
+          ${sectorData.barHtml}
         `;
-        el.title = `${stateName}: ${count} manufacturing facilities. Click to zoom.`;
+        el.title = `${stateName}: ${count} manufacturing facilities\nSectors: ${sectorData.summary}`;
 
         el.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -305,14 +339,19 @@ const TrinetMap = {
 
         this.markers.push(marker);
       } else {
-        // Multi-facility City Badge
+        // Multi-facility City Badge with Sector Spectrum Bar
+        const sectorData = this.computeSectorDistribution(feats);
+
         const el = document.createElement('div');
         el.className = 'trinet-badge-cluster trinet-badge-city';
         el.innerHTML = `
-          <span class="trinet-badge-label">${cityName}</span>
-          <span class="trinet-badge-count">${count}</span>
+          <div class="trinet-badge-header">
+            <span class="trinet-badge-label">${cityName}</span>
+            <span class="trinet-badge-count">${count}</span>
+          </div>
+          ${sectorData.barHtml}
         `;
-        el.title = `${cityName}: ${count} facilities. Click to inspect industrial estates.`;
+        el.title = `${cityName}: ${count} facilities\nSectors: ${sectorData.summary}`;
 
         el.addEventListener('click', (e) => {
           e.stopPropagation();

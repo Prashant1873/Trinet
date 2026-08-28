@@ -60,66 +60,108 @@
 }
 
 /* ──────────────────────────────────────
-   TRINET APPLE STATE & CITY CLUSTER BADGES
+   TRINET APPLE STATE & CITY CLUSTER BADGES WITH SECTOR SPECTRUM BAR
    ────────────────────────────────────── */
 
 .trinet-badge-cluster {
   cursor: pointer;
   user-select: none;
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 9999px;
-  background: rgba(0, 160, 108, 0.94);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  padding: 6px 12px 7px 12px;
+  border-radius: 12px;
+  background: rgba(18, 26, 23, 0.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   color: #FFFFFF;
-  border: 2px solid #FFFFFF;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22), 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.2);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif;
-  transition: transform 0.18s cubic-bezier(0.25, 1, 0.5, 1), background 0.15s ease, box-shadow 0.18s ease;
+  transition: transform 0.18s cubic-bezier(0.25, 1, 0.5, 1), background 0.15s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   white-space: nowrap;
 }
 
 .trinet-badge-cluster:hover {
-  transform: scale(1.08) translateY(-2px);
-  background: #008F5F;
-  box-shadow: 0 8px 20px rgba(0, 160, 108, 0.4), 0 2px 6px rgba(0, 0, 0, 0.15);
+  transform: scale(1.1) translateY(-3px);
+  background: rgba(22, 34, 30, 0.98);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45), 0 0 16px rgba(0, 160, 108, 0.3);
+  z-index: 50;
 }
 
 .trinet-badge-cluster:active {
   transform: scale(0.95);
 }
 
+.trinet-badge-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .trinet-badge-label {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.01em;
+  color: #FFFFFF;
 }
 
 .trinet-badge-count {
-  background: rgba(255, 255, 255, 0.28);
-  padding: 1px 7px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 1px 6px;
   border-radius: 9999px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   letter-spacing: -0.01em;
+  color: #FFFFFF;
+}
+
+/* Multi-Segment Sector Distribution Bar */
+.trinet-sector-bar {
+  display: flex;
+  height: 4px;
+  width: 100%;
+  min-width: 72px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.trinet-sector-segment {
+  height: 100%;
+  transition: opacity 0.15s ease;
+}
+
+.trinet-badge-cluster:hover .trinet-sector-segment {
+  opacity: 0.95;
 }
 
 /* Size Variants */
 .trinet-badge-state {
-  background: rgba(0, 140, 95, 0.96);
-  padding: 7px 14px;
+  padding: 7px 14px 8px 14px;
+  border-radius: 14px;
 }
 
 .trinet-badge-state .trinet-badge-label {
   font-size: 12px;
-  font-weight: 700;
+}
+
+.trinet-badge-state .trinet-sector-bar {
+  height: 5px;
+  min-width: 88px;
 }
 
 .trinet-badge-city {
-  background: rgba(14, 138, 94, 0.94);
+  padding: 5px 11px 6px 11px;
+  border-radius: 10px;
+}
+
+.trinet-badge-city .trinet-badge-label {
+  font-size: 10.5px;
 }
 
 /* ──────────────────────────────────────
