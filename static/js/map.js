@@ -543,25 +543,38 @@ const TrinetMap = {
     const icon = document.getElementById('legend-toggle-icon');
 
     if (toggle && items) {
-      toggle.addEventListener('click', () => {
-        const isHidden = items.style.display === 'none';
-        items.style.display = isHidden ? 'grid' : 'none';
-        if (icon) {
-          icon.setAttribute('data-lucide', isHidden ? 'chevron-down' : 'chevron-up');
-          if (typeof lucide !== 'undefined') lucide.createIcons();
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isCollapsed = items.classList.contains('collapsed');
+        if (isCollapsed) {
+          items.classList.remove('collapsed');
+          if (icon) icon.setAttribute('data-lucide', 'chevron-down');
+        } else {
+          items.classList.add('collapsed');
+          if (icon) icon.setAttribute('data-lucide', 'chevron-up');
         }
+        if (typeof lucide !== 'undefined') lucide.createIcons();
       });
     }
 
-    // Legend item click -> filter by that industry
+    // Legend item click -> toggle filter by that industry
     document.querySelectorAll('.legend-item').forEach(item => {
-      item.addEventListener('click', () => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
         const industry = item.getAttribute('data-industry');
         const filterSelect = document.getElementById('filter-industry');
         if (filterSelect) {
-          filterSelect.value = industry;
+          if (filterSelect.value === industry) {
+            filterSelect.value = '';
+            item.classList.remove('active');
+            TrinetApp.showToast('Cleared industry filter', 'info');
+          } else {
+            document.querySelectorAll('.legend-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            filterSelect.value = industry;
+            TrinetApp.showToast(`Filtered by ${industry}`, 'info');
+          }
           TrinetFilters.applyFilters();
-          TrinetApp.showToast(`Filtered by ${industry}`, 'info');
         }
       });
     });

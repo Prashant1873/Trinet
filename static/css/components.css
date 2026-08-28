@@ -824,9 +824,9 @@
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
-  padding: var(--space-3) var(--space-4);
-  box-shadow: var(--shadow-lg);
-  max-width: 280px;
+  padding: 10px 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+  max-width: 310px;
   transition: all var(--duration-normal) var(--ease-spring);
 }
 
@@ -836,6 +836,13 @@
   justify-content: space-between;
   cursor: pointer;
   user-select: none;
+  gap: 8px;
+}
+
+.map-legend-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .map-legend-title {
@@ -846,25 +853,45 @@
   color: var(--primary);
 }
 
+.map-legend-count-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  background: var(--surface-warm);
+  color: var(--text-secondary);
+  border: 1px solid var(--line);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
 .map-legend-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
+  gap: 4px 8px;
+  margin-top: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.map-legend-grid.collapsed {
+  display: none;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 6px;
   font-size: 0.6875rem;
   font-weight: 550;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 3px 6px;
+  padding: 4px 6px;
   border-radius: var(--radius-sm);
-  transition: background var(--duration-fast) var(--ease-spring),
-              color var(--duration-fast) var(--ease-spring);
+  border: 1px solid transparent;
+  transition: all var(--duration-fast) var(--ease-spring);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .legend-item:hover {
@@ -872,11 +899,19 @@
   color: var(--primary);
 }
 
+.legend-item.active {
+  background: var(--surface-warm);
+  color: var(--primary);
+  font-weight: 700;
+  border-color: var(--primary);
+}
+
 .legend-color-dot {
   width: 8px;
   height: 8px;
   border-radius: var(--radius-full);
   flex-shrink: 0;
+  box-shadow: 0 0 4px rgba(0,0,0,0.15);
 }
 
 /* Basemap Switcher (Top-Right Floating Controls) */
