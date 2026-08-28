@@ -351,7 +351,8 @@ const TrinetMap = {
     `;
 
     this.currentPopup = new maplibregl.Popup({
-      offset: [0, -32],
+      maxWidth: '380px',
+      offset: [0, -34],
       closeOnClick: true,
       closeButton: true
     })
