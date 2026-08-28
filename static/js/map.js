@@ -190,19 +190,32 @@ const TrinetMap = {
 
     let barHtml = '<div class="trinet-sector-bar">';
     const summaryParts = [];
+    const gradientStops = [];
+    let currentDeg = 0;
 
     sorted.forEach(([ind, cnt]) => {
-      const pct = ((cnt / total) * 100).toFixed(1);
+      const pct = cnt / total;
+      const pctFormatted = (pct * 100).toFixed(1);
       const color = this.INDUSTRY_COLORS[ind] || '#00A06C';
-      barHtml += `<div class="trinet-sector-segment" style="width:${pct}%; background:${color};" title="${ind}: ${cnt} (${Math.round((cnt/total)*100)}%)"></div>`;
+      const deg = pct * 360;
+
+      gradientStops.push(`${color} ${currentDeg.toFixed(1)}deg ${(currentDeg + deg).toFixed(1)}deg`);
+      currentDeg += deg;
+
+      barHtml += `<div class="trinet-sector-segment" style="width:${pctFormatted}%; background:${color};" title="${ind}: ${cnt} (${Math.round(pct * 100)}%)"></div>`;
       if (summaryParts.length < 3) {
-        summaryParts.push(`${ind} ${Math.round((cnt/total)*100)}%`);
+        summaryParts.push(`${ind} ${Math.round(pct * 100)}%`);
       }
     });
     barHtml += '</div>';
 
+    const conicGradient = gradientStops.length > 0
+      ? `conic-gradient(${gradientStops.join(', ')})`
+      : 'conic-gradient(#00A06C 0deg 360deg)';
+
     return {
       barHtml,
+      conicGradient,
       summary: summaryParts.join(' · ')
     };
   },
@@ -220,7 +233,7 @@ const TrinetMap = {
     const isFilteredByCity = typeof TrinetFilters !== 'undefined' && (!!TrinetFilters.state.city || !!TrinetFilters.state.search);
 
     // ────────────────────────────────────────────────────────
-    // LEVEL 1: Zoom < 6.8 (National Expanded Overview: 1 State Badge per State)
+    // LEVEL 1: Zoom < 6.8 (National Overview: 1 Circular Pie Chart Node per State)
     // ────────────────────────────────────────────────────────
     if (zoom < 6.8 && !isFilteredByCity && allFeatures.length > 200) {
       const stateGroups = {};
@@ -241,15 +254,29 @@ const TrinetMap = {
         }
 
         const sectorData = this.computeSectorDistribution(feats);
+        const shortName = stateName.length > 8 ? stateName.slice(0, 7) + '..' : stateName;
 
         const el = document.createElement('div');
-        el.className = 'trinet-badge-cluster trinet-badge-state';
+        el.className = 'trinet-cluster-node trinet-node-state';
         el.innerHTML = `
-          <div class="trinet-badge-header">
-            <span class="trinet-badge-label">${stateName}</span>
-            <span class="trinet-badge-count"><span class="badge-num">${count}</span> factories</span>
+          <!-- Compact Circle Pie Chart View (Zero Clutter Default) -->
+          <div class="trinet-pie-circle trinet-pie-circle-state" style="background:${sectorData.conicGradient};">
+            <div class="trinet-pie-inner">
+              <span class="trinet-pie-count">${count}</span>
+              <span class="trinet-pie-label">${shortName}</span>
+            </div>
           </div>
-          ${sectorData.barHtml}
+
+          <!-- Expanded Rectangle Card (Smooth morph on hover) -->
+          <div class="trinet-expanded-card">
+            <div class="trinet-card-header">
+              <span class="trinet-card-title">${stateName}</span>
+              <span class="trinet-card-badge">${count} factories</span>
+            </div>
+            ${sectorData.barHtml}
+            <div class="trinet-card-sectors">${sectorData.summary}</div>
+            <div class="trinet-card-hint">Click to zoom into state</div>
+          </div>
         `;
         el.title = `${stateName}: ${count} manufacturing facilities\nSectors: ${sectorData.summary}`;
 
@@ -321,6 +348,7 @@ const TrinetMap = {
 
     // ────────────────────────────────────────────────────────
     // LEVEL 2: Regional View (6.8 <= Zoom < 10.5 on broad all-India browse)
+    // Circular Pie Chart Nodes for Industrial Cities & Hubs
     // ────────────────────────────────────────────────────────
     const cityGroups = {};
     visibleFeatures.forEach(feat => {
@@ -364,17 +392,31 @@ const TrinetMap = {
 
         this.markers.push(marker);
       } else {
-        // Multi-facility City Badge with Sector Spectrum Bar
+        // Multi-facility City Pie Chart Node with Smooth Rectangle Hover Expansion
         const sectorData = this.computeSectorDistribution(feats);
+        const shortName = cityName.length > 8 ? cityName.slice(0, 7) + '..' : cityName;
 
         const el = document.createElement('div');
-        el.className = 'trinet-badge-cluster trinet-badge-city';
+        el.className = 'trinet-cluster-node trinet-node-city';
         el.innerHTML = `
-          <div class="trinet-badge-header">
-            <span class="trinet-badge-label">${cityName}</span>
-            <span class="trinet-badge-count"><span class="badge-num">${count}</span> sites</span>
+          <!-- Compact Circle Pie Chart View (Zero Clutter Default) -->
+          <div class="trinet-pie-circle trinet-pie-circle-city" style="background:${sectorData.conicGradient};">
+            <div class="trinet-pie-inner">
+              <span class="trinet-pie-count">${count}</span>
+              <span class="trinet-pie-label">${shortName}</span>
+            </div>
           </div>
-          ${sectorData.barHtml}
+
+          <!-- Expanded Rectangle Card (Smooth morph on hover) -->
+          <div class="trinet-expanded-card">
+            <div class="trinet-card-header">
+              <span class="trinet-card-title">${cityName}</span>
+              <span class="trinet-card-badge">${count} sites</span>
+            </div>
+            ${sectorData.barHtml}
+            <div class="trinet-card-sectors">${sectorData.summary}</div>
+            <div class="trinet-card-hint">Click to zoom into hub</div>
+          </div>
         `;
         el.title = `${cityName}: ${count} facilities\nSectors: ${sectorData.summary}`;
 
