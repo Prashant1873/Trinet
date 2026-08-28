@@ -163,8 +163,28 @@ const TrinetFilters = {
 
   applyFilters() {
     this.renderActiveChips();
-    TrinetResults.fetchResults();
-    TrinetMap.refreshMarkers();
+    this.syncLegendActive();
+    if (typeof TrinetResults !== 'undefined') TrinetResults.fetchResults(1);
+    if (typeof TrinetMap !== 'undefined') TrinetMap.refreshMarkers(false);
+  },
+
+  syncLegendActive() {
+    const activeInd = (this.state.industry || '').trim().toLowerCase();
+    document.querySelectorAll('.legend-item').forEach(item => {
+      const itemInd = (item.getAttribute('data-industry') || '').trim().toLowerCase();
+      if (activeInd && (itemInd === activeInd || activeInd.includes(itemInd) || itemInd.includes(activeInd))) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+    });
+  },
+
+  setIndustry(industry) {
+    this.state.industry = industry || '';
+    const el = document.getElementById('filter-industry');
+    if (el) el.value = this.state.industry;
+    this.applyFilters();
   },
 
   setFiltersFromAI(aiFilters) {

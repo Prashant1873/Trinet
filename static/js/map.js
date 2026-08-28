@@ -562,19 +562,14 @@ const TrinetMap = {
       item.addEventListener('click', (e) => {
         e.stopPropagation();
         const industry = item.getAttribute('data-industry');
-        const filterSelect = document.getElementById('filter-industry');
-        if (filterSelect) {
-          if (filterSelect.value === industry) {
-            filterSelect.value = '';
-            item.classList.remove('active');
+        if (typeof TrinetFilters !== 'undefined') {
+          if (TrinetFilters.state.industry === industry) {
+            TrinetFilters.setIndustry('');
             TrinetApp.showToast('Cleared industry filter', 'info');
           } else {
-            document.querySelectorAll('.legend-item').forEach(i => i.classList.remove('active'));
-            item.classList.add('active');
-            filterSelect.value = industry;
+            TrinetFilters.setIndustry(industry);
             TrinetApp.showToast(`Filtered by ${industry}`, 'info');
           }
-          TrinetFilters.applyFilters();
         }
       });
     });

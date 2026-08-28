@@ -73,8 +73,19 @@ def get_companies():
         params.extend([search_pattern, search_pattern, search_pattern, search_pattern, search_pattern, search_pattern])
         
     if industry:
-        where_clauses.append("c.industry = ?")
-        params.append(industry)
+        if industry == 'Automotive':
+            where_clauses.append("(c.industry = 'Automotive' OR c.industry LIKE 'Auto%')")
+        elif industry == 'Pharmaceuticals':
+            where_clauses.append("(c.industry = 'Pharmaceuticals' OR c.industry = 'Pharma')")
+        elif industry == 'Steel & Metals':
+            where_clauses.append("(c.industry = 'Steel & Metals' OR c.industry = 'Metals' OR c.industry = 'Castings' OR c.industry = 'Forgings')")
+        elif industry in ('Polymers & Rubber', 'Plastics & Polymers'):
+            where_clauses.append("(c.industry = 'Polymers & Rubber' OR c.industry = 'Plastics & Polymers' OR c.industry = 'Rubber' OR c.industry = 'Plastics')")
+        elif industry == 'Food & Beverage':
+            where_clauses.append("(c.industry = 'Food & Beverage' OR c.industry LIKE 'Food%')")
+        else:
+            where_clauses.append("c.industry = ?")
+            params.append(industry)
         
     if sub_industry:
         where_clauses.append("c.sub_industry = ?")
@@ -253,8 +264,19 @@ def get_facilities_geojson():
         sp = f"%{search}%"
         params.extend([sp, sp, sp, sp, sp, sp])
     if industry:
-        where_clauses.append("c.industry = ?")
-        params.append(industry)
+        if industry == 'Automotive':
+            where_clauses.append("(c.industry = 'Automotive' OR c.industry LIKE 'Auto%')")
+        elif industry == 'Pharmaceuticals':
+            where_clauses.append("(c.industry = 'Pharmaceuticals' OR c.industry = 'Pharma')")
+        elif industry == 'Steel & Metals':
+            where_clauses.append("(c.industry = 'Steel & Metals' OR c.industry = 'Metals' OR c.industry = 'Castings' OR c.industry = 'Forgings')")
+        elif industry in ('Polymers & Rubber', 'Plastics & Polymers'):
+            where_clauses.append("(c.industry = 'Polymers & Rubber' OR c.industry = 'Plastics & Polymers' OR c.industry = 'Rubber' OR c.industry = 'Plastics')")
+        elif industry == 'Food & Beverage':
+            where_clauses.append("(c.industry = 'Food & Beverage' OR c.industry LIKE 'Food%')")
+        else:
+            where_clauses.append("c.industry = ?")
+            params.append(industry)
     if sub_industry:
         where_clauses.append("c.sub_industry = ?")
         params.append(sub_industry)
