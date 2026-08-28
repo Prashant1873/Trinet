@@ -764,17 +764,17 @@
 
 .map-legend-panel {
   position: absolute;
-  bottom: var(--space-4);
-  left: var(--space-4);
-  z-index: var(--z-sticky);
+  bottom: 24px;
+  left: 16px;
+  z-index: 25;
   background: var(--surface-heavy);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid var(--separator);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
   padding: var(--space-3) var(--space-4);
-  box-shadow: var(--shadow-md);
-  max-width: 320px;
+  box-shadow: var(--shadow-lg);
+  max-width: 280px;
   transition: all var(--duration-normal) var(--ease-spring);
 }
 
@@ -788,10 +788,10 @@
 
 .map-legend-title {
   font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-weight: 750;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-tertiary);
+  color: var(--primary);
 }
 
 .map-legend-grid {
@@ -806,15 +806,17 @@
   align-items: center;
   gap: var(--space-2);
   font-size: 0.6875rem;
+  font-weight: 550;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 2px 4px;
-  border-radius: var(--radius-xs);
-  transition: background var(--duration-fast) var(--ease-spring);
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-fast) var(--ease-spring),
+              color var(--duration-fast) var(--ease-spring);
 }
 
 .legend-item:hover {
-  background: var(--primary-ghost);
+  background: var(--surface-warm);
   color: var(--primary);
 }
 
@@ -825,28 +827,29 @@
   flex-shrink: 0;
 }
 
-/* Basemap Switcher */
+/* Basemap Switcher (Top-Right Floating Pills) */
 .map-style-switcher {
   position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
-  z-index: var(--z-sticky);
+  top: 14px;
+  right: 16px;
+  z-index: 25;
   display: flex;
-  gap: var(--space-1);
+  gap: 2px;
   background: var(--surface-heavy);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid var(--separator);
-  border-radius: var(--radius-full);
-  padding: 3px;
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 3px 4px;
   box-shadow: var(--shadow-md);
 }
 
 .map-style-btn {
-  padding: 4px 10px;
+  padding: 5px 13px;
   font-size: 0.6875rem;
-  font-weight: 500;
-  border-radius: var(--radius-full);
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  border-radius: var(--radius-pill);
   border: none;
   background: transparent;
   color: var(--text-secondary);
@@ -854,10 +857,15 @@
   transition: all var(--duration-fast) var(--ease-spring);
 }
 
+.map-style-btn:hover {
+  color: var(--ink);
+  background: var(--surface-warm);
+}
+
 .map-style-btn.active {
-  background: var(--primary);
+  background: var(--ink);
   color: #FFFFFF;
-  box-shadow: var(--shadow-xs);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 /* Facility site tabs */

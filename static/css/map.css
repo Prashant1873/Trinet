@@ -301,43 +301,46 @@
 }
 
 /* ──────────────────────────────────────
-   MAP CONTROLS OVERLAY
+   MAP CONTROLS OVERLAY (Bottom-Right Precision Controls)
    ────────────────────────────────────── */
 
 .map-controls {
   position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
+  bottom: 24px;
+  right: 16px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  z-index: var(--z-base);
+  gap: 6px;
+  z-index: 25;
 }
 
 .map-control-btn {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 1.125rem;
-  box-shadow: var(--shadow-md);
-  transition: transform var(--duration-instant) var(--ease-spring),
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--duration-fast) var(--ease-spring),
               background var(--duration-fast) var(--ease-spring),
+              border-color var(--duration-fast) var(--ease-spring),
               box-shadow var(--duration-fast) var(--ease-spring);
   will-change: transform;
   background: var(--surface-heavy);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   color: var(--text-primary);
 }
 
 .map-control-btn:hover {
-  background: var(--bg);
-  box-shadow: var(--shadow-lg);
+  background: var(--surface-warm);
+  border-color: var(--line-strong);
+  color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .map-control-btn:active {
@@ -347,26 +350,31 @@
 
 .map-control-btn.active {
   background: var(--primary);
-  color: white;
+  border-color: var(--primary);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(0, 160, 108, 0.3);
 }
 
-/* Viewport count badge */
+/* Viewport count badge (Bottom-Center) */
 .map-viewport-count {
   position: absolute;
-  bottom: var(--space-6);
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  padding: var(--space-1) var(--space-4);
-  border-radius: var(--radius-full);
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 650;
+  letter-spacing: 0.01em;
   color: var(--text-primary);
+  border: 1px solid var(--line);
   box-shadow: var(--shadow-md);
-  z-index: var(--z-base);
+  z-index: 20;
   background: var(--surface-heavy);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   pointer-events: none;
+  white-space: nowrap;
   transition: opacity var(--duration-fast) var(--ease-spring);
 }
 
@@ -380,12 +388,12 @@
   background: rgba(0, 160, 108, 0.08);
   border-radius: var(--radius-xs);
   pointer-events: none;
-  z-index: var(--z-base);
+  z-index: 20;
 }
 
 .map-selection-toolbar {
   position: absolute;
-  bottom: var(--space-6);
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -393,8 +401,9 @@
   gap: var(--space-3);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-xl);
+  border: 1px solid var(--line);
   box-shadow: var(--shadow-float);
-  z-index: var(--z-base);
+  z-index: 25;
   background: var(--surface-heavy);
   backdrop-filter: blur(24px) saturate(200%);
   -webkit-backdrop-filter: blur(24px) saturate(200%);
@@ -402,18 +411,32 @@
 }
 
 /* ──────────────────────────────────────
-   AI CHAT BAR (floating above map)
+   AI CHAT BAR (Top-Center Floating Natural Language Search)
    ────────────────────────────────────── */
 
 .ai-chat-bar {
   position: absolute;
-  top: var(--space-4);
+  top: 14px;
   left: 50%;
   transform: translateX(-50%);
-  width: min(660px, calc(100% - 32px));
-  z-index: var(--z-base);
+  width: min(560px, calc(100% - 280px));
+  max-width: 560px;
+  z-index: 30;
   transition: width var(--duration-normal) var(--ease-spring),
               box-shadow var(--duration-normal) var(--ease-spring);
+}
+
+@media (max-width: 1024px) {
+  .ai-chat-bar {
+    width: calc(100% - 220px);
+  }
+}
+
+@media (max-width: 768px) {
+  .ai-chat-bar {
+    top: 56px;
+    width: calc(100% - 24px);
+  }
 }
 
 .ai-chat-input-wrapper {
