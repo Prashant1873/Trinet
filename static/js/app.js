@@ -71,12 +71,16 @@ const TrinetApp = {
     const mapContainer = document.getElementById('map-container');
     const sidebar = document.getElementById('sidebar');
     const dashboardView = document.getElementById('dashboard-view');
+    const expandBtn = document.getElementById('sidebar-expand-btn');
 
     if (viewName === 'map') {
       mapContainer.style.display = 'block';
       sidebar.style.display = 'flex';
       sidebar.style.width = ''; // Reset from 100% back to default CSS variable
       dashboardView.classList.remove('active');
+      if (expandBtn) {
+        expandBtn.style.display = sidebar.classList.contains('collapsed') ? 'inline-flex' : 'none';
+      }
       setTimeout(() => {
         if (TrinetMap.map) {
           TrinetMap.map.resize();
@@ -87,12 +91,20 @@ const TrinetApp = {
       mapContainer.style.display = 'none';
       sidebar.style.display = 'flex';
       sidebar.style.width = '100%';
+      // Force uncollapse sidebar so full directory catalog is visible
+      sidebar.classList.remove('collapsed');
+      if (expandBtn) {
+        expandBtn.style.display = 'none';
+      }
       dashboardView.classList.remove('active');
       this.switchSidebarTab('results');
     } else if (viewName === 'dashboard') {
       mapContainer.style.display = 'none';
       sidebar.style.display = 'none';
       sidebar.style.width = '';
+      if (expandBtn) {
+        expandBtn.style.display = 'none';
+      }
       dashboardView.classList.add('active');
       TrinetDashboard.fetchDashboardData();
     }
@@ -131,6 +143,10 @@ const TrinetApp = {
 
     const toggleFn = () => {
       if (!sidebar) return;
+      if (this.currentView !== 'map') {
+        this.switchView('map');
+        return;
+      }
       const isCollapsed = sidebar.classList.toggle('collapsed');
       
       if (expandBtn) {
