@@ -201,7 +201,7 @@ def synthesize_discovered_manufacturers(query, state=None, city=None, industry=N
             sfx = random.choice(SUFFIXES)
             company_name = f"{pfx} {term} {sfx}"
         else:
-            company_name = generate_company_name()
+            company_name = generate_company_name(target_industry)
             
         lat, lng = micro_jitter_within_estate(base_lat, base_lng)
         pin = base_pin

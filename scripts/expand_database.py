@@ -18,7 +18,7 @@ load_dotenv('.env')
 
 from database.seed import (
     CITY_INDUSTRIAL_ESTATES, CITIES, INDUSTRIES_LIST, SUB_INDUSTRIES,
-    CAPABILITIES_LIST, INDUSTRY_CAPABILITIES, generate_company_name,
+    CAPABILITIES_LIST, INDUSTRY_CAPABILITIES, INDUSTRY_FACILITY_DESCRIPTORS, generate_company_name,
     normalize_name, generate_website, micro_jitter_within_estate
 )
 
@@ -217,17 +217,17 @@ def run_extended_expansion(db_path):
         primary_estate = random.choice(estates)
         estate_name, estate_lat, estate_lng, estate_pincode = primary_estate
 
-        # Generate unique company name
+        industry = random.choice(city_industries)
+        sub_industries = SUB_INDUSTRIES.get(industry, [])
+        sub_industry = random.choice(sub_industries) if sub_industries else None
+
+        # Generate unique company name aligned with industry
         for _ in range(25):
-            name = generate_company_name()
+            name = generate_company_name(industry)
             norm = normalize_name(name)
             if norm not in used_names:
                 break
         used_names.add(norm)
-
-        industry = random.choice(city_industries)
-        sub_industries = SUB_INDUSTRIES.get(industry, [])
-        sub_industry = random.choice(sub_industries) if sub_industries else None
 
         scale_roll = random.random()
         if scale_roll < 0.28:
@@ -267,7 +267,7 @@ def run_extended_expansion(db_path):
         verification_roll = random.random()
         verification = 'VERIFIED' if verification_roll > 0.65 else ('PARTIALLY_VERIFIED' if verification_roll > 0.25 else 'UNVERIFIED')
 
-        company_desc = f"{name} is a premier {scale.lower()}-scale manufacturer specializing in {industry.lower()} and advanced components operating across {city_name}, {state_name}."
+        company_desc = f"{name} is a premier {scale.lower()}-scale manufacturer specializing in {industry} and advanced components operating across {city_name}, {state_name}."
 
         new_companies.append((
             company_id, name, norm, website, domain,
@@ -278,19 +278,16 @@ def run_extended_expansion(db_path):
         ))
 
         # Generate physical facilities strictly mapped to industrial estates
+        fac_descriptors = INDUSTRY_FACILITY_DESCRIPTORS.get(industry, ['Manufacturing Facility', 'Production Plant', 'Industrial Works'])
         for f_idx in range(facility_count):
             fac_id = str(uuid.uuid4())
             cur_estate = primary_estate if (f_idx == 0 or len(estates) == 1) else random.choice(estates)
             c_estate_name, c_lat, c_lng, c_pin = cur_estate
 
             fac_lat, fac_lng = micro_jitter_within_estate(c_lat, c_lng)
-            
-            if f_idx == 0:
-                fac_name = f"{name} - Unit 1 (Main Plant)"
-                fac_type = 'FACTORY' if scale in ['MICRO', 'SMALL'] else random.choice(['HQ', 'PLANT', 'FACTORY'])
-            else:
-                fac_type = random.choice(['PLANT', 'ASSEMBLY', 'WAREHOUSE', 'FABRICATION', 'RND', 'PROCESSING'])
-                fac_name = f"{name} - Unit {f_idx + 1} ({fac_type.capitalize()})"
+            descriptor = fac_descriptors[f_idx % len(fac_descriptors)]
+            fac_type = 'FACTORY' if scale in ['MICRO', 'SMALL'] else random.choice(['HQ', 'PLANT', 'FACTORY'])
+            fac_name = f"{name} - {city_name} Unit {f_idx + 1} ({descriptor})" if facility_count > 1 else f"{name} ({descriptor})"
 
             fac_addr = f"Plot No. {random.randint(1, 280)}, {c_estate_name}, {city_name}, {state_name} - {c_pin}"
             place_id = f"ChIJ{hashlib.md5((company_id + str(f_idx)).encode()).hexdigest()[:20]}"

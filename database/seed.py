@@ -36,6 +36,140 @@ CORES = [
     'Tubes', 'Coatings', 'Paints', 'Adhesives', 'Lubricants',
 ]
 
+INDUSTRY_NAME_CORES = {
+    'Pharmaceuticals': [
+        'Pharma', 'Pharmaceuticals', 'Life Sciences', 'Laboratories', 'Remedies',
+        'Therapeutics', 'Biotech', 'Formulations', 'Drugs & Chemicals', 'Biopharma',
+        'Healthcare', 'Medisciences', 'API Labs', 'Nutraceuticals', 'Bio-Remedies'
+    ],
+    'Automotive': [
+        'Motors', 'Automotive', 'Auto Components', 'Auto Engineering', 'Drivetrain',
+        'Mobility Systems', 'Auto Precision', 'Transmissions', 'Vehicles', 'Brakes & Clutches',
+        'Auto Electrics', 'Engine Components'
+    ],
+    'Polymers & Rubber': [
+        'Polymers', 'Rubber Products', 'Elastomers', 'Polymer Technologies', 'Synthetic Polymers',
+        'Moulded Rubber', 'Butyl Tubes & Rubber', 'Polymer Solutions', 'Engineered Rubber', 'Precision Polymers'
+    ],
+    'Electronics': [
+        'Electronics', 'Microelectronics', 'Circuit Systems', 'PCB Technologies', 'Optoelectronics',
+        'Embedded Systems', 'Digital Systems', 'Semiconductor Components', 'Sensors & Controllers'
+    ],
+    'Semiconductors': [
+        'Semiconductors', 'Microchip Technologies', 'Silicon Systems', 'Wafer Dynamics', 'Chip Fabrication',
+        'OSAT Microelectronics', 'Integrated Circuits'
+    ],
+    'Chemicals': [
+        'Chemicals', 'Specialty Chemicals', 'Petrochemicals', 'Organics', 'Dyes & Pigments',
+        'Agrochemicals', 'Fine Chemicals', 'Industrial Solutions', 'Reagents & Synthetics'
+    ],
+    'Textiles': [
+        'Textiles', 'Fabrics', 'Apparels', 'Garments', 'Yarns & Fibres', 'Spinning Mills',
+        'Weaving Works', 'Technical Textiles', 'Knitting Mills', 'Cotton Mills'
+    ],
+    'Steel & Metals': [
+        'Steel', 'Metals & Alloys', 'Forgings', 'Foundries', 'Castings', 'Rolling Mills',
+        'Aluminium Alloys', 'Metallurgical Works', 'Special Steels', 'Tube & Structural Steel'
+    ],
+    'Machinery': [
+        'Machinery', 'Machine Tools', 'CNC Systems', 'Automation Equipment', 'Precision Machines',
+        'Industrial Machinery', 'Heavy Machinery', 'Tool Works'
+    ],
+    'Industrial Equipment': [
+        'Industrial Equipment', 'Pumps & Valves', 'Hydraulics & Pneumatics', 'Compressors',
+        'Bearings & Gears', 'Flow Systems', 'Heavy Equipment', 'Industrial Dynamics'
+    ],
+    'Plastics': [
+        'Plastics', 'Moulded Plastics', 'Polymers & Mouldings', 'Extrusions', 'Injection Plastics',
+        'Precision Plastics', 'Technical Plastics'
+    ],
+    'Packaging': [
+        'Packaging Solutions', 'Corrugators', 'Flexible Packaging', 'Boxes & Cartons',
+        'Container Works', 'Pack Technologies', 'Industrial Packaging'
+    ],
+    'Energy Equipment': [
+        'Energy Systems', 'Solar Technologies', 'Power Equipment', 'Transformers & Switchgears',
+        'Clean Energy', 'Renewable Power', 'Electrical Power Equipment'
+    ],
+    'Consumer Goods': [
+        'Consumer Products', 'FMCG Manufacturing', 'Home Appliances', 'Personal Care Works',
+        'Consumer Dynamics', 'Household Goods'
+    ],
+    'Construction Materials': [
+        'Cements & Concrete', 'Building Materials', 'Ceramic Tiles', 'Refractories',
+        'Sanitaryware', 'Structural Materials', 'TMT Steels'
+    ],
+    'Furniture': [
+        'Furniture Systems', 'Modular Interiors', 'Office Furniture', 'Ergonomic Solutions',
+        'Wood & Steel Furniture'
+    ],
+    'Medical Devices': [
+        'Medical Devices', 'MedTech Systems', 'Surgical Instruments', 'Diagnostic Equipment',
+        'Biomedical Systems', 'Healthcare Devices'
+    ],
+    'Aerospace & Defence': [
+        'Aerospace Dynamics', 'Defence Systems', 'Avionics', 'Aero Structures',
+        'Precision Aerospace', 'Defence Technologies', 'Advanced Aero Works'
+    ]
+}
+
+INDUSTRY_FACILITY_DESCRIPTORS = {
+    'Pharmaceuticals': [
+        'Active API Synthesis Unit', 'Oral Solid Dosage (OSD) Plant', 'Sterile Formulations & Injectables Facility',
+        'Cleanroom Biotech Processing Unit', 'Finished Formulations Plant', 'Analytical Testing & Quality Control Center'
+    ],
+    'Automotive': [
+        'Main Component Manufacturing Plant', 'Precision Vehicle Assembly Line', 'Drivetrain & Transmission Unit',
+        'Die Casting & Stamping Facility', 'Auto Electronics & Sub-Assembly Unit', 'Testing & Prototyping Centre'
+    ],
+    'Polymers & Rubber': [
+        'Heavy Rubber Moulding Plant', 'Butyl Tube & Extrusion Facility', 'Polymer Compounding & Mixing Unit',
+        'Precision Elastomer Facility', 'Technical Polymers Works'
+    ],
+    'Electronics': [
+        'SMT Surface Mount Assembly Unit', 'PCB Fabrication & Testing Plant', 'Consumer Electronics Assembly Facility',
+        'Micro-Electronic Cleanroom Plant'
+    ],
+    'Chemicals': [
+        'Specialty Chemical Synthesis Plant', 'Bulk Organic Formulation Unit', 'Distillation & Refining Facility',
+        'Reagents & Catalysts Processing Unit'
+    ],
+    'Steel & Metals': [
+        'Heavy Structural Rolling Mill', 'Precision Induction Casting Foundry', 'Hot Forgings & Heat Treatment Unit',
+        'Alloy Melting & Extrusion Plant'
+    ],
+    'Machinery': [
+        'CNC Machining & Tooling Center', 'Machine Tool Fabrication Plant', 'Industrial Automation Assembly Works',
+        'Heavy Engineering & Fitting Unit'
+    ],
+    'Textiles': [
+        'Yarn Spinning & Twisting Mill', 'Automated Weaving & Knitting Facility', 'Textile Processing & Dyeing Works',
+        'Technical Garment Manufacturing Unit'
+    ],
+    'Food & Beverage': [
+        'Automated Food Processing Plant', 'Dairy & Liquid Bottling Facility', 'Spice Extraction & Packaging Unit',
+        'Hygienic Canning & Storage Facility'
+    ],
+    'Plastics': [
+        'High-Tonnage Injection Moulding Unit', 'Blow Moulding & Container Plant', 'Polymer Profile Extrusion Facility'
+    ],
+    'Packaging': [
+        'High-Speed Corrugation Plant', 'Flexible Barrier Packaging Facility', 'Multi-Layer Carton Printing & Converting Unit'
+    ],
+    'Energy Equipment': [
+        'Photovoltaic Solar Module Plant', 'High-Voltage Transformer Assembly Unit', 'Switchgear & Power Distribution Works'
+    ],
+    'Medical Devices': [
+        'Sterile Medical Device Assembly Plant', 'Surgical Instrument Machining Center', 'Diagnostic Kits & Cartridge Unit'
+    ],
+    'Aerospace & Defence': [
+        'Precision Aero-Engine Component Facility', 'Defence Avionics & Radar Assembly Center', 'Advanced Composite Structures Unit'
+    ],
+    'Construction Materials': [
+        'Automated Cement Grinding & Clinker Unit', 'Ceramic Tile Pressing & Glazing Plant', 'Pre-Cast Concrete & TMT Processing Yard'
+    ]
+}
+
 SUFFIXES = [
     'Pvt. Ltd.', 'Pvt. Ltd.', 'Pvt. Ltd.', 'Pvt. Ltd.',
     'Ltd.', 'Ltd.',
@@ -384,10 +518,13 @@ def normalize_name(name):
     n = ' '.join(n.split())
     return n
 
-def generate_company_name():
-    """Generate a realistic Indian company name"""
+def generate_company_name(industry=None):
+    """Generate a realistic, industry-aligned Indian company name"""
     prefix = random.choice(PREFIXES)
-    core = random.choice(CORES)
+    if industry and industry in INDUSTRY_NAME_CORES:
+        core = random.choice(INDUSTRY_NAME_CORES[industry])
+    else:
+        core = random.choice(CORES)
     suffix = random.choice(SUFFIXES)
 
     if core.lower() in suffix.lower():
@@ -478,16 +615,16 @@ def seed_database(db_path):
         primary_estate = random.choice(estates)
         estate_name, estate_lat, estate_lng, estate_pincode = primary_estate
 
-        # Generate unique name
-        for _ in range(10):
-            name = generate_company_name()
-            if name not in used_names:
-                break
-        used_names.add(name)
-
         industry = random.choice(city_industries)
         sub_industries = SUB_INDUSTRIES.get(industry, [])
         sub_industry = random.choice(sub_industries) if sub_industries else None
+
+        # Generate unique industry-aligned name
+        for _ in range(20):
+            name = generate_company_name(industry)
+            if name not in used_names:
+                break
+        used_names.add(name)
 
         scale_roll = random.random()
         if scale_roll < 0.35:
@@ -544,7 +681,7 @@ def seed_database(db_path):
             'estimated_revenue': None,
             'company_scale': scale,
             'scale_score': score,
-            'company_description': f"{name} is an established {scale.lower()}-scale manufacturer of {industry.lower()} operating out of {estate_name}, {city_name}, {state}.",
+            'company_description': f"{name} is a premier {scale.lower()}-scale manufacturer in {industry} operating out of {estate_name}, {city_name}, {state}.",
             'verification_status': verification,
             'is_exporter': 1 if is_exporter else 0,
             'is_public_company': 1 if is_public else 0,
@@ -552,6 +689,7 @@ def seed_database(db_path):
         companies.append(company)
 
         # Generate facilities strictly mapped to real industrial estates in this city
+        fac_descriptors = INDUSTRY_FACILITY_DESCRIPTORS.get(industry, ['Manufacturing Facility', 'Production Plant', 'Industrial Works'])
         for f_idx in range(facility_count):
             # Select estate (either same primary estate or another estate in same city)
             cur_estate = primary_estate if (f_idx == 0 or len(estates) == 1) else random.choice(estates)
@@ -560,12 +698,9 @@ def seed_database(db_path):
             # Apply micro-jitter (within industrial park boundary on land)
             fac_lat, fac_lng = micro_jitter_within_estate(c_lat, c_lng)
 
-            if f_idx == 0:
-                fac_type = random.choice(['FACTORY', 'PLANT', 'HQ'])
-                fac_name = f"{city_name} {'Headquarters & Main Plant' if fac_type == 'HQ' else 'Main Manufacturing Plant'}"
-            else:
-                fac_type = random.choice(['FACTORY', 'PLANT', 'ASSEMBLY', 'PROCESSING', 'FABRICATION'])
-                fac_name = f"{city_name} Unit {f_idx + 1}"
+            descriptor = fac_descriptors[f_idx % len(fac_descriptors)]
+            fac_type = 'HQ' if (f_idx == 0 and scale in ('LARGE', 'ENTERPRISE')) else 'FACTORY'
+            fac_name = f"{name} - {city_name} Unit {f_idx + 1} ({descriptor})" if facility_count > 1 else f"{name} ({descriptor})"
 
             plot_num = random.randint(1, 450)
             facility = {
