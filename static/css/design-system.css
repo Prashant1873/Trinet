@@ -1,0 +1,319 @@
+/*
+ * TRINET™ Design System
+ * Apple-inspired fluid interface design
+ * Typography: optical sizing, tracking, leading
+ * Materials: translucent layers with backdrop-filter
+ * Motion: spring-like timing, interruptible transitions
+ */
+
+/* ──────────────────────────────────────
+   RESET & BASE
+   ────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  color: var(--text-primary);
+  background: var(--bg);
+  line-height: 1.47;
+  letter-spacing: -0.005em;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ──────────────────────────────────────
+   DESIGN TOKENS
+   ────────────────────────────────────── */
+
+:root {
+  /* Brand palette */
+  --primary: #00A06C;
+  --primary-hover: #008F5F;
+  --primary-active: #007E52;
+  --primary-light: #8DCCAD;
+  --primary-lighter: #C5E6D5;
+  --primary-ghost: rgba(0, 160, 108, 0.08);
+  --primary-ghost-hover: rgba(0, 160, 108, 0.14);
+
+  --secondary: #8DCCAD;
+  --neutral: #D8D2C8;
+  --neutral-light: #EDE9E1;
+  --accent: #F4EBC3;
+  --accent-warm: #F0E4A8;
+
+  /* Semantic */
+  --bg: #FFFFFF;
+  --bg-secondary: #FAFAF8;
+  --bg-tertiary: #F5F4F1;
+  --bg-elevated: #FFFFFF;
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-heavy: rgba(255, 255, 255, 0.92);
+
+  /* Text */
+  --text-primary: #1D1D1F;
+  --text-secondary: #6E6E73;
+  --text-tertiary: #AEAEB2;
+  --text-quaternary: #C7C7CC;
+  --text-inverse: #FFFFFF;
+  --text-on-primary: #FFFFFF;
+
+  /* Borders & separators */
+  --separator: rgba(0, 0, 0, 0.06);
+  --separator-heavy: rgba(0, 0, 0, 0.12);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-focus: var(--primary);
+  --ring: 0 0 0 3px rgba(0, 160, 108, 0.25);
+
+  /* Depth — shadows that scale with surface size */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 28px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-xl: 0 16px 48px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-float: 0 22px 70px 4px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.04);
+
+  /* Radii */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-full: 9999px;
+
+  /* Spacing (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Spring-like timing (critically damped feel) */
+  --ease-spring: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.55, 0.085, 0.68, 0.53);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+
+  /* Durations — response-oriented */
+  --duration-instant: 100ms;
+  --duration-fast: 200ms;
+  --duration-normal: 350ms;
+  --duration-slow: 500ms;
+  --duration-enter: 400ms;
+  --duration-exit: 300ms;
+
+  /* Z-index scale */
+  --z-base: 1;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-popover: 500;
+  --z-toast: 600;
+  --z-tooltip: 700;
+
+  /* Layout */
+  --header-height: 56px;
+  --sidebar-width: 420px;
+  --sidebar-width-collapsed: 0px;
+}
+
+/* ──────────────────────────────────────
+   TYPOGRAPHY — Size-specific tracking & leading
+   ────────────────────────────────────── */
+
+/* Display — large, tight leading, negative tracking */
+.text-display {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+/* Title 1 */
+.text-title-1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.022em;
+}
+
+/* Title 2 */
+.text-title-2 {
+  font-size: 1.375rem;
+  font-weight: 600;
+  line-height: 1.18;
+  letter-spacing: -0.017em;
+}
+
+/* Title 3 */
+.text-title-3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.22;
+  letter-spacing: -0.012em;
+}
+
+/* Headline */
+.text-headline {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.33;
+  letter-spacing: -0.005em;
+}
+
+/* Body — default */
+.text-body {
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.47;
+  letter-spacing: -0.003em;
+}
+
+/* Subhead */
+.text-subhead {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.38;
+  letter-spacing: 0;
+}
+
+/* Caption */
+.text-caption {
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.33;
+  letter-spacing: 0.01em;
+}
+
+/* Caption 2 — smallest */
+.text-caption-2 {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.27;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* Monospace */
+.text-mono {
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  font-size: 0.8125rem;
+  letter-spacing: 0;
+}
+
+/* ──────────────────────────────────────
+   MATERIALS — Translucent layers
+   ────────────────────────────────────── */
+
+/* Thin material — lightest, for small floating elements */
+.material-thin {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* Regular material — for toolbars, headers */
+.material-regular {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+
+/* Thick material — for sidebars, panels */
+.material-thick {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+}
+
+/* Ultra-thin — popover, tooltip */
+.material-ultra-thin {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+}
+
+/* ──────────────────────────────────────
+   REDUCED MOTION & ACCESSIBILITY
+   ────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 150ms !important;
+  }
+  .material-thin, .material-regular, .material-thick, .material-ultra-thin {
+    backdrop-filter: blur(4px);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .material-thin, .material-regular, .material-thick, .material-ultra-thin {
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --separator: rgba(0, 0, 0, 0.18);
+    --border: rgba(0, 0, 0, 0.2);
+  }
+  .material-thin, .material-regular, .material-thick {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* ──────────────────────────────────────
+   SCROLLBAR
+   ────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.25);
+}
+
+/* ──────────────────────────────────────
+   SELECTION
+   ────────────────────────────────────── */
+
+::selection {
+  background: rgba(0, 160, 108, 0.2);
+  color: var(--text-primary);
+}

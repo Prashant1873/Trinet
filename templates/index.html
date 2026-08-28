@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TRINET™ — India Manufacturing Intelligence & Discovery Platform</title>
+  <meta name="description" content="Discover, map, classify, and analyze manufacturing facilities and industrial ecosystems across India.">
+
+  <!-- MapLibre GL JS -->
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+  <!-- SheetJS for Client-Side Excel Export -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- TRINET Stylesheets (Apple Design System) -->
+  <link rel="stylesheet" href="/static/css/design-system.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  <link rel="stylesheet" href="/static/css/layout.css">
+  <link rel="stylesheet" href="/static/css/map.css">
+</head>
+<body>
+
+<div id="app">
+  <!-- ──────────────────────────────────────
+       HEADER
+       ────────────────────────────────────── -->
+  <header id="header" class="material-regular">
+    <div class="header-brand">
+      <div class="header-logo">TRINET<span class="header-logo-tm">TM</span></div>
+      <div class="header-tagline">India Industrial Intelligence</div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="header-nav">
+      <button class="header-nav-item active" data-view="map" id="nav-map-btn">
+        <i data-lucide="map-pin" style="width:14px; height:14px; display:inline-block; vertical-align:middle; margin-right:4px;"></i> Map & Discover
+      </button>
+      <button class="header-nav-item" data-view="companies" id="nav-companies-btn">
+        <i data-lucide="building-2" style="width:14px; height:14px; display:inline-block; vertical-align:middle; margin-right:4px;"></i> Companies Directory
+      </button>
+      <button class="header-nav-item" data-view="dashboard" id="nav-dashboard-btn">
+        <i data-lucide="bar-chart-3" style="width:14px; height:14px; display:inline-block; vertical-align:middle; margin-right:4px;"></i> Coverage Dashboard
+      </button>
+    </nav>
+
+    <!-- Stats Ticker -->
+    <div class="header-stats">
+      <div class="header-stat">
+        <span class="header-stat-value" id="stat-companies-count">500</span>
+        <span>Companies</span>
+      </div>
+      <div class="header-stat">
+        <span class="header-stat-value" id="stat-facilities-count">861</span>
+        <span>Facilities</span>
+      </div>
+      <div class="header-stat">
+        <span class="header-stat-value" id="stat-states-count">20</span>
+        <span>States</span>
+      </div>
+    </div>
+
+    <!-- Header Actions -->
+    <div class="header-actions">
+      <button class="btn btn-secondary btn-sm" id="header-export-btn" title="Export current filtered results">
+        <i data-lucide="download" style="width:14px; height:14px;"></i> Export Data
+      </button>
+    </div>
+  </header>
+
+  <!-- ──────────────────────────────────────
+       MAIN CONTENT CONTAINER
+       ────────────────────────────────────── -->
+  <div id="main-content">
+    
+    <!-- ── SIDEBAR PANEL ── -->
+    <aside id="sidebar">
+      <button class="sidebar-toggle" id="sidebar-toggle-btn" title="Toggle Sidebar">
+        <i data-lucide="chevron-left" id="sidebar-toggle-icon" style="width:16px; height:16px;"></i>
+      </button>
+
+      <!-- Sidebar Tabs -->
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" data-tab="results" id="tab-results-btn">Results (<span id="results-tab-count">0</span>)</button>
+        <button class="sidebar-tab" data-tab="filters" id="tab-filters-btn">Filters <span id="active-filters-badge" class="badge badge-primary" style="display:none; margin-left:4px;">0</span></button>
+      </div>
+
+      <!-- Active Filters Bar (Sticky) -->
+      <div class="active-filters-bar" id="active-filters-container">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Sidebar Content Body -->
+      <div class="sidebar-content">
+        
+        <!-- Results Panel -->
+        <div id="results-panel">
+          <div class="results-header">
+            <div class="results-count">
+              <span class="results-count-number" id="results-count-display">0</span> Manufacturers
+            </div>
+            <div class="results-sort">
+              <select id="sort-select" class="select">
+                <option value="scale_score:desc">Highest Scale</option>
+                <option value="company_name:asc">Name (A-Z)</option>
+                <option value="establishment_year:asc">Oldest First</option>
+                <option value="establishment_year:desc">Newest First</option>
+                <option value="facility_count:desc">Most Facilities</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Bulk Selection Subheader -->
+          <div class="results-bulk-actions">
+            <label class="checkbox-wrapper">
+              <input type="checkbox" id="select-all-checkbox" class="checkbox">
+              <span style="font-size:0.75rem; color:var(--text-secondary);">Select Page (<span id="selected-count-display">0</span>)</span>
+            </label>
+            <button class="btn btn-ghost btn-sm" id="clear-selection-btn" style="margin-left:auto; display:none;">Deselect All</button>
+          </div>
+
+          <!-- List Items -->
+          <div class="results-list" id="results-list-container">
+            <div class="results-list-items" id="results-items">
+              <!-- Dynamically populated company cards -->
+            </div>
+            <!-- Loading indicator -->
+            <div id="results-loading" style="display:none; padding:var(--space-4); text-align:center;">
+              <div class="skeleton" style="height:80px; margin-bottom:var(--space-2);"></div>
+              <div class="skeleton" style="height:80px; margin-bottom:var(--space-2);"></div>
+              <div class="skeleton" style="height:80px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Panel -->
+        <div id="filter-panel" style="display:none;">
+          
+          <!-- Geography Filter -->
+          <div class="filter-section">
+            <div class="filter-section-header" data-toggle="geo">
+              <span class="filter-section-title">Geography</span>
+              <i data-lucide="chevron-down" class="filter-section-arrow" style="width:14px; height:14px;"></i>
+            </div>
+            <div class="filter-section-body">
+              <label class="text-caption text-tertiary">State / Union Territory</label>
+              <select id="filter-state" class="input select">
+                <option value="">All States of India</option>
+              </select>
+
+              <label class="text-caption text-tertiary mt-2">City / Industrial Hub</label>
+              <select id="filter-city" class="input select">
+                <option value="">All Manufacturing Cities</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Industry Filter -->
+          <div class="filter-section">
+            <div class="filter-section-header" data-toggle="industry">
+              <span class="filter-section-title">Industry & Category</span>
+              <i data-lucide="chevron-down" class="filter-section-arrow" style="width:14px; height:14px;"></i>
+            </div>
+            <div class="filter-section-body">
+              <label class="text-caption text-tertiary">Primary Industry</label>
+              <select id="filter-industry" class="input select">
+                <option value="">All Manufacturing Sectors</option>
+              </select>
+
+              <label class="text-caption text-tertiary mt-2">Manufacturing Capability</label>
+              <select id="filter-capability" class="input select">
+                <option value="">All Capabilities (CNC, Casting...)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Scale & Size Filter -->
+          <div class="filter-section">
+            <div class="filter-section-header" data-toggle="scale">
+              <span class="filter-section-title">Scale & Score</span>
+              <i data-lucide="chevron-down" class="filter-section-arrow" style="width:14px; height:14px;"></i>
+            </div>
+            <div class="filter-section-body">
+              <label class="text-caption text-tertiary">Enterprise Scale Class</label>
+              <div style="display:flex; flex-direction:column; gap:var(--space-2); margin-top:var(--space-1);">
+                <label class="checkbox-wrapper">
+                  <input type="checkbox" class="checkbox filter-scale-checkbox" value="ENTERPRISE">
+                  <span class="badge badge-scale-enterprise">Enterprise (86-100)</span>
+                </label>
+                <label class="checkbox-wrapper">
+                  <input type="checkbox" class="checkbox filter-scale-checkbox" value="LARGE">
+                  <span class="badge badge-scale-large">Large Scale (61-85)</span>
+                </label>
+                <label class="checkbox-wrapper">
+                  <input type="checkbox" class="checkbox filter-scale-checkbox" value="MEDIUM">
+                  <span class="badge badge-scale-medium">Medium Scale (36-60)</span>
+                </label>
+                <label class="checkbox-wrapper">
+                  <input type="checkbox" class="checkbox filter-scale-checkbox" value="SMALL">
+                  <span class="badge badge-scale-small">Small Scale (16-35)</span>
+                </label>
+                <label class="checkbox-wrapper">
+                  <input type="checkbox" class="checkbox filter-scale-checkbox" value="MICRO">
+                  <span class="badge badge-scale-micro">Micro Scale (0-15)</span>
+                </label>
+              </div>
+
+              <div class="mt-3">
+                <div class="flex justify-between text-caption text-tertiary mb-1">
+                  <span>Min Scale Score</span>
+                  <span id="score-slider-val" class="font-semibold text-primary">0</span>
+                </div>
+                <input type="range" id="filter-min-score" class="range-slider" min="0" max="100" value="0">
+              </div>
+            </div>
+          </div>
+
+          <!-- Business Profile -->
+          <div class="filter-section">
+            <div class="filter-section-header" data-toggle="business">
+              <span class="filter-section-title">Business Characteristics</span>
+              <i data-lucide="chevron-down" class="filter-section-arrow" style="width:14px; height:14px;"></i>
+            </div>
+            <div class="filter-section-body">
+              <label class="checkbox-wrapper">
+                <input type="checkbox" id="filter-exporter" class="checkbox">
+                <span class="text-body" style="font-size:0.8125rem;">Exporters Only</span>
+              </label>
+              <label class="checkbox-wrapper mt-1">
+                <input type="checkbox" id="filter-public" class="checkbox">
+                <span class="text-body" style="font-size:0.8125rem;">Publicly Listed Companies</span>
+              </label>
+              <label class="checkbox-wrapper mt-1">
+                <input type="checkbox" id="filter-verified" class="checkbox">
+                <span class="text-body" style="font-size:0.8125rem;">Verified Profiles Only</span>
+              </label>
+            </div>
+          </div>
+
+          <div style="padding:var(--space-4) 0;">
+            <button class="btn btn-primary w-full" id="apply-filters-btn">Apply Filters</button>
+            <button class="btn btn-ghost w-full mt-2" id="reset-filters-btn">Reset All Filters</button>
+          </div>
+
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- ── MAP CONTAINER ── -->
+    <main id="map-container">
+      
+      <!-- AI Natural Language Search Floating Bar -->
+      <div class="ai-chat-bar" id="ai-chat-container">
+        <div class="ai-chat-input-wrapper">
+          <i data-lucide="sparkles" class="ai-chat-icon"></i>
+          <input type="text" id="ai-chat-input" class="ai-chat-input" 
+                 placeholder="Ask in natural language... e.g. 'Pharma factories in Hyderabad with 500+ workers'"
+                 autocomplete="off">
+          <button id="ai-chat-submit-btn" class="ai-chat-submit" title="Search with AI">
+            <i data-lucide="arrow-up" style="width:16px; height:16px;"></i>
+          </button>
+        </div>
+
+        <!-- AI Explanation Banner -->
+        <div class="ai-explanation" id="ai-explanation-box" style="display:none;">
+          <i data-lucide="bot" class="ai-explanation-icon" style="width:16px; height:16px;"></i>
+          <div style="flex:1;">
+            <div id="ai-explanation-text" style="font-weight:500;"></div>
+            <div id="ai-followups-container" style="margin-top:var(--space-2); display:flex; gap:var(--space-2); flex-wrap:wrap;"></div>
+          </div>
+          <button class="btn-icon btn-sm ai-explanation-dismiss" id="ai-explanation-close">
+            <i data-lucide="x" style="width:14px; height:14px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Interactive MapLibre GL JS Map -->
+      <div id="map"></div>
+
+      <!-- Map Floating Action Controls -->
+      <div class="map-controls">
+        <button class="map-control-btn" id="map-zoom-in" title="Zoom In">
+          <i data-lucide="plus" style="width:18px; height:18px;"></i>
+        </button>
+        <button class="map-control-btn" id="map-zoom-out" title="Zoom Out">
+          <i data-lucide="minus" style="width:18px; height:18px;"></i>
+        </button>
+        <button class="map-control-btn" id="map-reset-view" title="Reset to All India">
+          <i data-lucide="globe" style="width:18px; height:18px;"></i>
+        </button>
+        <button class="map-control-btn" id="map-select-tool" title="Box Select Facilities for Export">
+          <i data-lucide="crop" style="width:18px; height:18px;"></i>
+        </button>
+      </div>
+
+      <!-- Viewport Facility Count Badge -->
+      <div class="map-viewport-count" id="map-viewport-badge">
+        <span id="viewport-count-num">861</span> facilities visible on map
+      </div>
+
+      <!-- Map Area Selection Overlay Toolbar -->
+      <div class="map-selection-toolbar" id="map-selection-toolbar" style="display:none;">
+        <span style="font-size:0.8125rem; font-weight:600;">Area Selection Active</span>
+        <span class="badge badge-primary" id="map-selected-count">0 facilities</span>
+        <button class="btn btn-primary btn-sm" id="map-export-selection-btn">
+          <i data-lucide="download" style="width:12px; height:12px;"></i> Export Area Data
+        </button>
+        <button class="btn btn-ghost btn-sm" id="map-cancel-selection-btn">Cancel</button>
+      </div>
+
+    </main>
+
+    <!-- ── DISCOVERY COVERAGE DASHBOARD VIEW (Swappable with Map) ── -->
+    <div id="dashboard-view">
+      <div style="max-width:1200px; margin:0 auto;">
+        
+        <!-- Header -->
+        <div style="margin-bottom:var(--space-6);">
+          <h1 class="text-title-1">Discovery Coverage & Intelligence Dashboard</h1>
+          <p class="text-body text-secondary mt-1">Track systematic discovery progress across India's 36 States/UTs, industrial corridors, and categories.</p>
+        </div>
+
+        <!-- KPI Grid -->
+        <div class="dashboard-grid">
+          <div class="stat-card">
+            <div class="stat-card-label">Total Companies Identified</div>
+            <div class="stat-card-value" id="dash-companies-val">500</div>
+            <div class="stat-card-sub text-accent">Active intelligence database</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">Physical Facilities Mapped</div>
+            <div class="stat-card-value" id="dash-facilities-val">861</div>
+            <div class="stat-card-sub text-secondary">Across 49 manufacturing cities</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">National Coverage Score</div>
+            <div class="stat-card-value" id="dash-coverage-val">74/100</div>
+            <div class="stat-card-sub text-secondary">Based on discovery methodology</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">Active Exporters Cataloged</div>
+            <div class="stat-card-value" id="dash-exporters-val">128</div>
+            <div class="stat-card-sub text-accent">Export verification tracked</div>
+          </div>
+        </div>
+
+        <!-- Trigger Live Discovery Box -->
+        <div class="card mb-6" style="background:var(--surface-heavy);">
+          <h3 class="text-title-3 mb-2">Run Live Discovery Pipeline</h3>
+          <p class="text-body text-secondary mb-4">Execute live Google Places & Apify scraping pipelines to expand coverage for a specific sector or industrial region.</p>
+          
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) 120px; gap:var(--space-3); align-items:flex-end;">
+            <div>
+              <label class="text-caption text-tertiary">Industry</label>
+              <select id="discovery-industry-input" class="input select">
+                <option value="Automotive">Automotive</option>
+                <option value="Pharmaceuticals">Pharmaceuticals</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Textiles">Textiles</option>
+                <option value="Chemicals">Chemicals</option>
+                <option value="Machinery">Machinery</option>
+                <option value="Steel & Metals">Steel & Metals</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-caption text-tertiary">Target State / City</label>
+              <input type="text" id="discovery-location-input" class="input" placeholder="e.g. Pune or Gujarat">
+            </div>
+            <div>
+              <label class="text-caption text-tertiary">Discovery Engine</label>
+              <select id="discovery-source-input" class="input select">
+                <option value="GOOGLE_PLACES">Google Places API</option>
+                <option value="APIFY_MAPS">Apify Maps Scraper</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="run-discovery-btn" style="height:38px;">
+              <i data-lucide="play" style="width:14px; height:14px;"></i> Discover
+            </button>
+          </div>
+
+          <div id="discovery-progress" style="display:none; margin-top:var(--space-4); padding:var(--space-3); border-radius:var(--radius-md); background:var(--primary-ghost);">
+            <div class="flex items-center gap-2">
+              <div class="ai-loading-dot"></div>
+              <span class="text-body font-medium" id="discovery-progress-text">Running discovery workflow...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Geographic Coverage Table -->
+        <div class="card mb-6">
+          <h3 class="text-title-3 mb-4">State-wise Discovery Coverage</h3>
+          <div class="coverage-table-container">
+            <table class="coverage-table" id="coverage-matrix-table">
+              <thead>
+                <tr>
+                  <th>State / UT</th>
+                  <th>Coverage Status</th>
+                  <th>Coverage Score</th>
+                  <th>Companies Found</th>
+                  <th>Facilities Mapped</th>
+                  <th>Searches Run</th>
+                </tr>
+              </thead>
+              <tbody id="coverage-matrix-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ──────────────────────────────────────
+       SLIDE-IN COMPANY PROFILE MODAL
+       ────────────────────────────────────── -->
+  <div class="company-modal" id="company-profile-modal">
+    <div class="company-modal-header material-regular">
+      <div>
+        <span class="badge badge-primary" id="modal-company-industry">Industry</span>
+        <span class="badge badge-scale-large ml-1" id="modal-company-scale">Scale</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="btn btn-secondary btn-sm" id="modal-export-single-btn">
+          <i data-lucide="download" style="width:14px; height:14px;"></i> Export Profile
+        </button>
+        <button class="btn-icon" id="company-modal-close-btn">
+          <i data-lucide="x" style="width:18px; height:18px;"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="company-modal-body">
+      
+      <!-- Hero -->
+      <div class="company-hero">
+        <h2 class="company-hero-name" id="modal-company-name">Company Name</h2>
+        <p class="company-hero-desc" id="modal-company-desc">Description</p>
+        <div class="flex items-center gap-3">
+          <a href="#" target="_blank" id="modal-company-website" class="btn btn-secondary btn-sm">
+            <i data-lucide="globe" style="width:12px; height:12px;"></i> Official Website
+          </a>
+          <span id="modal-company-verification" class="badge badge-verified">Verified Profile</span>
+        </div>
+      </div>
+
+      <!-- Key Intelligence Metrics Grid -->
+      <div class="company-section">
+        <div class="company-section-title">Scale Intelligence</div>
+        <div class="company-metrics">
+          <div class="company-metric">
+            <div class="company-metric-label">Scale Score</div>
+            <div class="company-metric-value text-accent" id="modal-metric-score">82/100</div>
+          </div>
+          <div class="company-metric">
+            <div class="company-metric-label">Headquarters</div>
+            <div class="company-metric-value" id="modal-metric-hq">Pune, MH</div>
+          </div>
+          <div class="company-metric">
+            <div class="company-metric-label">Established</div>
+            <div class="company-metric-value" id="modal-metric-year">1994</div>
+          </div>
+          <div class="company-metric">
+            <div class="company-metric-label">Employees</div>
+            <div class="company-metric-value" id="modal-metric-emp">1,200+</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Facilities List & Mini-Map -->
+      <div class="company-section">
+        <div class="company-section-title">Mapped Facilities (<span id="modal-fac-count">1</span>)</div>
+        <div class="company-minimap" id="company-minimap"></div>
+        <div id="modal-facilities-list" style="display:flex; flex-direction:column; gap:var(--space-2);">
+          <!-- Facility items populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Manufacturing Capabilities -->
+      <div class="company-section">
+        <div class="company-section-title">Manufacturing Capabilities</div>
+        <div id="modal-capabilities-container" style="display:flex; flex-wrap:wrap; gap:var(--space-2);">
+          <!-- Capability tags -->
+        </div>
+      </div>
+
+      <!-- Data Provenance & Traceability -->
+      <div class="company-section">
+        <div class="company-section-title">Source Intelligence & Traceability</div>
+        <table class="source-table">
+          <thead>
+            <tr>
+              <th>Data Signal</th>
+              <th>Observed Value</th>
+              <th>Authority Source</th>
+              <th>Confidence</th>
+            </tr>
+          </thead>
+          <tbody id="modal-sources-body">
+            <!-- Source rows -->
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────────────
+       FLOATING EXPORT TOOLBAR
+       ────────────────────────────────────── -->
+  <div class="export-toolbar hidden" id="bulk-export-toolbar">
+    <div class="export-toolbar-count">
+      <span id="export-selected-count">0</span> companies selected
+    </div>
+    
+    <div class="export-format-toggle">
+      <button class="export-format-btn active" data-format="xlsx">Excel (.xlsx)</button>
+      <button class="export-format-btn" data-format="csv">CSV (.csv)</button>
+    </div>
+
+    <button class="btn btn-primary btn-sm" id="trigger-export-btn">
+      <i data-lucide="download" style="width:14px; height:14px;"></i> Download Export
+    </button>
+  </div>
+
+  <!-- Toast Container for Notifications -->
+  <div class="toast-container" id="toast-container"></div>
+  
+  <!-- Backdrop Overlay -->
+  <div class="overlay" id="global-overlay"></div>
+
+</div>
+
+<!-- Application JavaScript Modules -->
+<script src="/static/js/export.js"></script>
+<script src="/static/js/filters.js"></script>
+<script src="/static/js/map.js"></script>
+<script src="/static/js/results.js"></script>
+<script src="/static/js/search.js"></script>
+<script src="/static/js/company.js"></script>
+<script src="/static/js/dashboard.js"></script>
+<script src="/static/js/app.js"></script>
+
+<script>
+  // Initialize Lucide icons
+  lucide.createIcons();
+</script>
+
+</body>
+</html>
