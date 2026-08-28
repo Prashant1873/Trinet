@@ -18,28 +18,67 @@ GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 CITIES_COORDS = {
     'mumbai': [72.8777, 19.0760],
     'pune': [73.8567, 18.5204],
+    'chakan': [73.8450, 18.7560],
+    'bhosari': [73.8450, 18.6350],
+    'pimpri': [73.7997, 18.6298],
+    'talegaon': [73.6850, 18.7320],
+    'ranjangaon': [74.2450, 18.7980],
     'nashik': [73.7898, 19.9975],
     'aurangabad': [75.3433, 19.8762],
     'nagpur': [79.0882, 21.1458],
     'ahmedabad': [72.5714, 23.0225],
+    'sanand': [72.3780, 22.9850],
     'surat': [72.8311, 21.1702],
     'vadodara': [73.1812, 22.3072],
     'rajkot': [70.8022, 22.3039],
+    'morbi': [70.8350, 22.8150],
+    'jamnagar': [70.0750, 22.4450],
+    'vapi': [72.9150, 20.3720],
+    'ankleshwar': [73.0050, 21.6280],
     'chennai': [80.2707, 13.0827],
     'coimbatore': [76.9558, 11.0168],
+    'hosur': [77.8280, 12.7420],
+    'tirupur': [77.3420, 11.1080],
     'bengaluru': [77.5946, 12.9716],
     'bangalore': [77.5946, 12.9716],
+    'peenya': [77.5185, 13.0285],
+    'belagavi': [74.5250, 15.8650],
+    'belgaum': [74.5050, 15.8250],
+    'mysuru': [76.6050, 12.3550],
+    'hubli': [75.1850, 15.3450],
+    'dharwad': [74.9850, 15.4850],
     'hyderabad': [78.4867, 17.3850],
+    'visakhapatnam': [83.2185, 17.6868],
     'gurugram': [77.0266, 28.4595],
     'gurgaon': [77.0266, 28.4595],
+    'manesar': [76.9380, 28.3580],
+    'faridabad': [77.3180, 28.3680],
+    'panipat': [76.9850, 29.4050],
     'noida': [77.3910, 28.5355],
+    'kanpur': [80.2450, 26.4650],
+    'agra': [78.0550, 27.2050],
     'ludhiana': [75.8573, 30.9010],
+    'jalandhar': [75.6050, 31.3450],
     'jamshedpur': [86.2029, 22.8046],
+    'ranchi': [85.3150, 23.2950],
     'kolkata': [88.3639, 22.5726],
     'indore': [75.8577, 22.7196],
-    'visakhapatnam': [83.2185, 17.6868],
+    'pithampur': [75.6850, 22.6150],
+    'bhopal': [77.4650, 23.2650],
     'jaipur': [75.7873, 26.9124],
-    'baddi': [76.7914, 30.9578]
+    'neemrana': [76.3850, 27.9850],
+    'bhiwadi': [76.8650, 28.2150],
+    'baddi': [76.7914, 30.9578],
+    'pantnagar': [79.4050, 29.0250],
+    'haridwar': [78.0450, 29.9650],
+    'dehradun': [77.8550, 30.3650],
+    'bhilai': [81.3850, 21.2150],
+    'raipur': [81.6050, 21.3050],
+    'rourkela': [84.7650, 22.2150],
+    'guwahati': [91.6850, 26.1850],
+    'kochi': [76.3250, 10.0550],
+    'silvassa': [73.0150, 20.2850],
+    'goa': [73.9350, 15.3650]
 }
 
 SYSTEM_PROMPT = """You are TRINET AI Search Assistant for Indian Manufacturing.
@@ -48,7 +87,7 @@ Your job is to parse natural language queries from users into a structured JSON 
 Available Filters:
 - industry: One of ["Automotive", "Aerospace & Defence", "Electronics", "Semiconductors", "Pharmaceuticals", "Chemicals", "Textiles", "Food & Beverage", "Steel & Metals", "Machinery", "Industrial Equipment", "Plastics", "Packaging", "Energy Equipment", "Consumer Goods", "Construction Materials", "Furniture", "Medical Devices"] or null.
 - state: Full Indian state name (e.g. "Maharashtra", "Gujarat", "Tamil Nadu", "Karnataka", "Telangana", "Haryana", "Punjab", "Uttar Pradesh", "West Bengal", "Rajasthan") or null.
-- city: City name (e.g. "Pune", "Hyderabad", "Bengaluru", "Ahmedabad", "Chennai", "Gurugram", "Surat", "Coimbatore", "Ludhiana", "Jamshedpur") or null.
+- city: City name (e.g. "Pune", "Chakan", "Hyderabad", "Bengaluru", "Ahmedabad", "Chennai", "Gurugram", "Manesar", "Surat", "Coimbatore", "Ludhiana", "Jamshedpur") or null.
 - scale: Array with any of ["MICRO", "SMALL", "MEDIUM", "LARGE", "ENTERPRISE"] or null.
 - minEmployees: integer or null
 - maxEmployees: integer or null
@@ -56,7 +95,7 @@ Available Filters:
 - maxEstablishmentYear: integer or null
 - minScaleScore: integer (0-100) or null
 - maxScaleScore: integer (0-100) or null
-- capability: Manufacturing capability (e.g. "CNC Machining", "Casting", "Forging", "Welding", "Injection Moulding", "Stamping", "Assembly") or null.
+- capability: Manufacturing capability (e.g. "Fabrication", "CNC Machining", "Casting", "Forging", "Welding", "Injection Moulding", "Stamping", "Assembly") or null.
 - isExporter: true / false / null
 - isPublicCompany: true / false / null
 - search: generic text query if any, or null
@@ -103,7 +142,13 @@ def rule_based_fallback(query):
         'steel': 'Steel & Metals',
         'metal': 'Steel & Metals',
         'iron': 'Steel & Metals',
+        'fabricat': 'Steel & Metals',
+        'welding': 'Steel & Metals',
+        'casting': 'Steel & Metals',
+        'foundry': 'Steel & Metals',
+        'forg': 'Steel & Metals',
         'machin': 'Machinery',
+        'cnc': 'Machinery',
         'equipment': 'Industrial Equipment',
         'pump': 'Industrial Equipment',
         'valve': 'Industrial Equipment',
@@ -115,17 +160,42 @@ def rule_based_fallback(query):
         'tile': 'Construction Materials',
         'medical': 'Medical Devices'
     }
-    for k, v in industry_map.items():
+    # Sort by key length descending to prevent sub-string collisions (e.g. 'fabricat' vs 'fabric')
+    for k, v in sorted(industry_map.items(), key=lambda x: len(x[0]), reverse=True):
         if k in q_lower:
             filters['industry'] = v
             applied_desc.append(f"Industry: {v}")
             break
+
+    # Check capabilities
+    if 'fabricat' in q_lower:
+        filters['capability'] = 'Fabrication'
+        applied_desc.append("Capability: Fabrication")
+    elif 'cnc' in q_lower:
+        filters['capability'] = 'CNC Machining'
+        applied_desc.append("Capability: CNC Machining")
+    elif 'cast' in q_lower:
+        filters['capability'] = 'Die Casting'
+        applied_desc.append("Capability: Casting")
+    elif 'forg' in q_lower:
+        filters['capability'] = 'Forging'
+        applied_desc.append("Capability: Forging")
             
     # Check cities & map action
     for city_name, coords in CITIES_COORDS.items():
         if city_name in q_lower:
             cap_city = city_name.capitalize()
-            filters['city'] = cap_city
+            # Map Chakan, Bhosari, Talegaon, Pimpri to Pune if searching in db
+            if city_name in ['chakan', 'bhosari', 'pimpri', 'talegaon', 'ranjangaon']:
+                filters['city'] = 'Pune'
+            elif city_name in ['manesar']:
+                filters['city'] = 'Gurugram'
+            elif city_name in ['sanand']:
+                filters['city'] = 'Ahmedabad'
+            elif city_name in ['peenya']:
+                filters['city'] = 'Bengaluru'
+            else:
+                filters['city'] = cap_city
             map_action = {"center": coords, "zoom": 12.5}
             applied_desc.append(f"Location: {cap_city}")
             break
