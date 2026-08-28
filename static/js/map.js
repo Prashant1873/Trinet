@@ -41,6 +41,8 @@ const TrinetMap = {
     'Machinery': '#14B8A6',
     'Electricals': '#6366F1',
     'Plastics & Polymers': '#06B6D4',
+    'Polymers & Rubber': '#06B6D4',
+    'Polymers': '#06B6D4',
     'Food & Beverage': '#84CC16',
     'Energy Equipment': '#F97316',
     'Construction Materials': '#78716C',

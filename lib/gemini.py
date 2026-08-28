@@ -45,6 +45,7 @@ CITIES_COORDS = {
     'belagavi': [74.5250, 15.8650],
     'belgaum': [74.5050, 15.8250],
     'mysuru': [76.6050, 12.3550],
+    'mysore': [76.6050, 12.3550],
     'hubli': [75.1850, 15.3450],
     'dharwad': [74.9850, 15.4850],
     'hyderabad': [78.4867, 17.3850],
@@ -85,10 +86,10 @@ SYSTEM_PROMPT = """You are TRINET AI Search Assistant for Indian Manufacturing.
 Your job is to parse natural language queries from users into a structured JSON filter object and map action.
 
 Available Filters:
-- search: Exact or partial name of factory, company, unit, plant, or specific manufacturer keyword (e.g. "Ace Gears", "Tata Motors", "Bharat Forge", "Thermax", "Kirloskar", "Shree Precision") if searching for a specific enterprise/facility, or null.
-- industry: One of ["Automotive", "Aerospace & Defence", "Electronics", "Semiconductors", "Pharmaceuticals", "Chemicals", "Textiles", "Food & Beverage", "Steel & Metals", "Machinery", "Industrial Equipment", "Plastics", "Packaging", "Energy Equipment", "Consumer Goods", "Construction Materials", "Furniture", "Medical Devices"] or null.
+- search: Exact or partial name of factory, company, unit, plant, or specific manufacturer keyword (e.g. "MYPOL", "Ace Gears", "Tata Motors", "Bharat Forge", "Thermax", "Kirloskar", "Shree Precision") if searching for a specific enterprise/facility, or null.
+- industry: One of ["Automotive", "Aerospace & Defence", "Electronics", "Semiconductors", "Pharmaceuticals", "Chemicals", "Polymers & Rubber", "Textiles", "Food & Beverage", "Steel & Metals", "Machinery", "Industrial Equipment", "Plastics", "Packaging", "Energy Equipment", "Consumer Goods", "Construction Materials", "Furniture", "Medical Devices"] or null.
 - state: Full Indian state name (e.g. "Maharashtra", "Gujarat", "Tamil Nadu", "Karnataka", "Telangana", "Haryana", "Punjab", "Uttar Pradesh", "West Bengal", "Rajasthan") or null.
-- city: City name (e.g. "Pune", "Chakan", "Hyderabad", "Bengaluru", "Ahmedabad", "Chennai", "Gurugram", "Manesar", "Surat", "Coimbatore", "Ludhiana", "Jamshedpur") or null.
+- city: City name (e.g. "Mysuru", "Pune", "Chakan", "Hyderabad", "Bengaluru", "Ahmedabad", "Chennai", "Gurugram", "Manesar", "Surat", "Coimbatore", "Ludhiana", "Jamshedpur") or null.
 - scale: Array with any of ["MICRO", "SMALL", "MEDIUM", "LARGE", "ENTERPRISE"] or null.
 - minEmployees: integer or null
 - maxEmployees: integer or null
@@ -96,7 +97,7 @@ Available Filters:
 - maxEstablishmentYear: integer or null
 - minScaleScore: integer (0-100) or null
 - maxScaleScore: integer (0-100) or null
-- capability: Manufacturing capability (e.g. "Fabrication", "CNC Machining", "Casting", "Forging", "Welding", "Injection Moulding", "Stamping", "Assembly") or null.
+- capability: Manufacturing capability (e.g. "Rubber Moulding", "Fabrication", "CNC Machining", "Casting", "Forging", "Welding", "Injection Moulding", "Stamping", "Assembly") or null.
 - isExporter: true / false / null
 - isPublicCompany: true / false / null
 
@@ -125,8 +126,13 @@ def rule_based_fallback(query):
     clean_target = re.sub(r'^(find|search for|search|show me|locate|where is|get|look for)\s+', '', query, flags=re.IGNORECASE).strip()
     clean_target = re.sub(r'\s+(factory|plant|facility|works|unit|industries|corp|ltd)$', '', clean_target, flags=re.IGNORECASE).strip()
     
+    # Strip location suffix like "in mysore" or "in pune" from entity name lookup
+    entity_name_guess = re.sub(r'\s+in\s+[a-zA-Z\s]+$', '', clean_target, flags=re.IGNORECASE).strip()
+    
     matched_entity = None
-    if len(clean_target) >= 3 and clean_target.lower() not in ['all', 'india', 'manufacturer', 'manufacturers', 'companies', 'factories', 'units', 'plants']:
+    targets_to_check = [t for t in [clean_target, entity_name_guess] if len(t) >= 3 and t.lower() not in ['all', 'india', 'manufacturer', 'manufacturers', 'companies', 'factories', 'units', 'plants', 'polymers', 'plastics', 'rubber', 'automotive', 'pharma', 'steel']]
+    
+    for t in targets_to_check:
         matched_entity = query_one("""
             SELECT c.id AS company_id, c.company_name, c.industry, c.headquarters_city, c.headquarters_state,
                    f.id AS facility_id, f.facility_name, f.latitude, f.longitude, f.address, f.city, f.state
@@ -135,12 +141,17 @@ def rule_based_fallback(query):
             WHERE c.company_name LIKE ? OR c.normalized_name LIKE ? OR f.facility_name LIKE ?
             ORDER BY c.scale_score DESC
             LIMIT 1
-        """, (f"%{clean_target}%", f"%{clean_target}%", f"%{clean_target}%"))
+        """, (f"%{t}%", f"%{t}%", f"%{t}%"))
+        if matched_entity:
+            clean_target = t
+            break
         
     if matched_entity and matched_entity.get('latitude') and matched_entity.get('longitude'):
         filters['search'] = clean_target
         if matched_entity.get('industry'):
             filters['industry'] = matched_entity['industry']
+        if matched_entity.get('city') or matched_entity.get('headquarters_city'):
+            filters['city'] = matched_entity.get('city') or matched_entity.get('headquarters_city')
         map_action = {
             "center": [matched_entity['longitude'], matched_entity['latitude']],
             "zoom": 14.5
@@ -161,6 +172,12 @@ def rule_based_fallback(query):
     
     # Check industries
     industry_map = {
+        'polymers & rubber': 'Polymers & Rubber',
+        'polymers': 'Polymers & Rubber',
+        'polymer': 'Polymers & Rubber',
+        'rubber': 'Polymers & Rubber',
+        'elastomer': 'Polymers & Rubber',
+        'butyl': 'Polymers & Rubber',
         'pharma': 'Pharmaceuticals',
         'pharmaceutical': 'Pharmaceuticals',
         'drug': 'Pharmaceuticals',
@@ -219,6 +236,9 @@ def rule_based_fallback(query):
     elif 'forg' in q_lower:
         filters['capability'] = 'Forging'
         applied_desc.append("Capability: Forging")
+    elif 'rubber' in q_lower or 'polymer' in q_lower or 'mould' in q_lower:
+        filters['capability'] = 'Rubber Moulding'
+        applied_desc.append("Capability: Rubber Moulding")
             
     # Check cities & map action
     for city_name, coords in CITIES_COORDS.items():
@@ -233,6 +253,8 @@ def rule_based_fallback(query):
                 filters['city'] = 'Ahmedabad'
             elif city_name in ['peenya']:
                 filters['city'] = 'Bengaluru'
+            elif city_name in ['mysore', 'mysuru']:
+                filters['city'] = 'Mysuru'
             else:
                 filters['city'] = cap_city
             map_action = {"center": coords, "zoom": 12.5}
