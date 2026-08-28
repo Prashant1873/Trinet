@@ -179,37 +179,46 @@ body {
   --bg: #0C0F17;
   --bg-secondary: #121622;
   --bg-tertiary: #191E2C;
-  --bg-elevated: #151A26;
-  --surface: rgba(21, 26, 38, 0.88);
-  --surface-heavy: rgba(21, 26, 38, 0.96);
+  --bg-elevated: #161C28;
+  --surface: rgba(22, 28, 40, 0.88);
+  --surface-warm: rgba(255, 255, 255, 0.08);
+  --surface-heavy: rgba(22, 28, 40, 0.96);
   --sidebar: #090C12;
 
   --ink: #F6F0E5;
   --ink-variant: #DCE7E1;
   --muted: #8E9E95;
-  --line: rgba(255, 255, 255, 0.10);
-  --line-strong: rgba(255, 255, 255, 0.18);
+  --line: rgba(255, 255, 255, 0.12);
+  --line-strong: rgba(255, 255, 255, 0.22);
+
+  /* High-Contrast Primary & Accent in Dark Mode */
+  --primary: #00BA7C;
+  --primary-dark: #008F5F;
+  --primary-hover: #10D993;
+  --primary-soft: rgba(0, 186, 124, 0.22);
+  --primary-ghost: rgba(0, 186, 124, 0.15);
+  --primary-ghost-hover: rgba(0, 186, 124, 0.25);
+  --on-primary: #FFFFFF;
 
   --text-primary: #F6F0E5;
-  --text-secondary: #A6B8AE;
-  --text-tertiary: #7D8E85;
-  --text-quaternary: #4D5E55;
+  --text-secondary: #B4C4BC;
+  --text-tertiary: #84968D;
+  --text-quaternary: #54665D;
+  --text-inverse: #0C0F17;
+  --text-on-primary: #FFFFFF;
 
-  --separator: rgba(255, 255, 255, 0.08);
-  --separator-heavy: rgba(255, 255, 255, 0.15);
-  --border: rgba(255, 255, 255, 0.10);
-  --border-focus: #00A06C;
-  --ring: 0 0 0 3px rgba(0, 160, 108, 0.35);
+  --separator: rgba(255, 255, 255, 0.10);
+  --separator-heavy: rgba(255, 255, 255, 0.18);
+  --border: rgba(255, 255, 255, 0.14);
+  --border-focus: #00BA7C;
+  --ring: 0 0 0 3px rgba(0, 186, 124, 0.40);
 
-  --primary-ghost: rgba(0, 160, 108, 0.18);
-  --primary-ghost-hover: rgba(0, 160, 108, 0.28);
-
-  --shadow-xs: 0 1px 2px rgba(0,0,0,0.4);
-  --shadow-sm: 0 2px 4px rgba(0,0,0,0.5);
-  --shadow-md: 0 6px 16px rgba(0,0,0,0.6);
-  --shadow-lg: 0 12px 32px rgba(0,0,0,0.7);
-  --shadow-xl: 0 20px 50px rgba(0,0,0,0.8);
-  --shadow-float: 0 24px 80px rgba(0,0,0,0.88), 0 0 0 1px rgba(255,255,255,0.08);
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.5);
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.6);
+  --shadow-md: 0 6px 16px rgba(0,0,0,0.7);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.8);
+  --shadow-xl: 0 20px 50px rgba(0,0,0,0.9);
+  --shadow-float: 0 24px 80px rgba(0,0,0,0.95), 0 0 0 1px rgba(255,255,255,0.12);
 }
 
 /* ──────────────────────────────────────

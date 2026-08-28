@@ -537,15 +537,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
-  transition: background var(--duration-fast) var(--ease-spring), color var(--duration-fast) var(--ease-spring);
+.export-format-btn:hover {
+  color: var(--text-primary);
+  background: var(--surface-warm);
 }
 
 .export-format-btn.active {
-  background: var(--ink);
-  color: #FFFFFF;
-  border-color: var(--ink);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  background: var(--primary);
+  color: #FFFFFF !important;
+  border-color: var(--primary);
+  box-shadow: 0 1px 4px rgba(0, 160, 108, 0.35);
+  font-weight: 700;
 }
 
 /* ──────────────────────────────────────
