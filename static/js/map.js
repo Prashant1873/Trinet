@@ -167,6 +167,38 @@ const TrinetMap = {
     }
   },
 
+  flyToLocation(coords, zoom = 12.5) {
+    if (!this.map || !coords) return;
+    this.map.flyTo({
+      center: coords,
+      zoom: zoom,
+      essential: true,
+      duration: 1000
+    });
+  },
+
+  resetToAllIndia() {
+    if (this.currentPopup) {
+      this.currentPopup.remove();
+      this.currentPopup = null;
+    }
+    if (typeof TrinetFilters !== 'undefined') {
+      TrinetFilters.resetFilters();
+    }
+    const aiInput = document.getElementById('ai-search-input');
+    if (aiInput) {
+      aiInput.value = '';
+      const submitBtn = document.getElementById('ai-search-submit');
+      if (submitBtn) submitBtn.classList.remove('has-query');
+    }
+    const explBox = document.getElementById('ai-explanation-box');
+    if (explBox) explBox.style.display = 'none';
+
+    this.flyToLocation([78.9629, 21.5937], 4.8);
+    this.refreshMarkers(false);
+    TrinetApp.showToast('Reset to All India overview', 'info');
+  },
+
   fitToFeatures(features) {
     if (!this.map || !features || !features.length) return;
     if (features.length === 1) {
@@ -585,7 +617,7 @@ const TrinetMap = {
     });
 
     document.getElementById('map-reset-view')?.addEventListener('click', () => {
-      this.flyToLocation([78.9629, 21.5937], 4.8);
+      this.resetToAllIndia();
     });
 
     document.getElementById('map-select-tool')?.addEventListener('click', () => {
