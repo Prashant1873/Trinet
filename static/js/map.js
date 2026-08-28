@@ -80,7 +80,30 @@ const TrinetMap = {
       clusterRadius: 50
     });
 
-    // 2. Clustered Circles Layer
+    // 2. Clustered Circles Glow Layer (Apple translucent halo)
+    this.map.addLayer({
+      id: 'clusters-glow',
+      type: 'circle',
+      source: 'facilities',
+      filter: ['has', 'point_count'],
+      paint: {
+        'circle-color': '#00A06C',
+        'circle-radius': [
+          'step',
+          ['get', 'point_count'],
+          22,
+          20,
+          28,
+          60,
+          36,
+          150,
+          44
+        ],
+        'circle-opacity': 0.28
+      }
+    });
+
+    // 3. Clustered Circles Core Layer
     this.map.addLayer({
       id: 'clusters',
       type: 'circle',
@@ -101,33 +124,17 @@ const TrinetMap = {
         'circle-radius': [
           'step',
           ['get', 'point_count'],
-          16,
+          14,
           20,
-          22,
+          18,
           60,
-          28,
+          24,
           150,
-          36
+          30
         ],
         'circle-stroke-width': 2.5,
         'circle-stroke-color': '#FFFFFF',
-        'circle-opacity': 0.94
-      }
-    });
-
-    // 3. Cluster Count Numbers Layer
-    this.map.addLayer({
-      id: 'cluster-count',
-      type: 'symbol',
-      source: 'facilities',
-      filter: ['has', 'point_count'],
-      layout: {
-        'text-field': '{point_count_abbreviated}',
-        'text-size': 12,
-        'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold']
-      },
-      paint: {
-        'text-color': '#FFFFFF'
+        'circle-opacity': 0.95
       }
     });
 
@@ -155,16 +162,16 @@ const TrinetMap = {
           'Packaging', '#84CC16',
           '#00A06C'
         ],
-        'circle-radius': 8,
-        'circle-stroke-width': 2.5,
+        'circle-radius': 7,
+        'circle-stroke-width': 2,
         'circle-stroke-color': '#FFFFFF',
         'circle-opacity': 0.95
       }
     });
 
-    // ── Click Handlers for Clusters & Count Label ──
+    // ── Click Handlers for Clusters ──
     const handleClusterClick = (e) => {
-      const features = this.map.queryRenderedFeatures(e.point, { layers: ['clusters', 'cluster-count'] });
+      const features = this.map.queryRenderedFeatures(e.point, { layers: ['clusters', 'clusters-glow'] });
       if (!features.length) return;
       
       const feature = features[0];
@@ -191,7 +198,7 @@ const TrinetMap = {
     };
 
     this.map.on('click', 'clusters', handleClusterClick);
-    this.map.on('click', 'cluster-count', handleClusterClick);
+    this.map.on('click', 'clusters-glow', handleClusterClick);
 
     // ── Click Handler for Individual Factory Points ──
     this.map.on('click', 'unclustered-point', (e) => {
@@ -208,11 +215,22 @@ const TrinetMap = {
       this.showFacilityPopup(props, coords);
     });
 
+    // ── Dismiss popup on background map click ──
+    this.map.on('click', (e) => {
+      const features = this.map.queryRenderedFeatures(e.point, {
+        layers: ['clusters', 'clusters-glow', 'unclustered-point']
+      });
+      if (!features.length && this.currentPopup) {
+        this.currentPopup.remove();
+        this.currentPopup = null;
+      }
+    });
+
     // Cursor Styling on Hover
     this.map.on('mouseenter', 'clusters', () => { this.map.getCanvas().style.cursor = 'pointer'; });
     this.map.on('mouseleave', 'clusters', () => { this.map.getCanvas().style.cursor = ''; });
-    this.map.on('mouseenter', 'cluster-count', () => { this.map.getCanvas().style.cursor = 'pointer'; });
-    this.map.on('mouseleave', 'cluster-count', () => { this.map.getCanvas().style.cursor = ''; });
+    this.map.on('mouseenter', 'clusters-glow', () => { this.map.getCanvas().style.cursor = 'pointer'; });
+    this.map.on('mouseleave', 'clusters-glow', () => { this.map.getCanvas().style.cursor = ''; });
     this.map.on('mouseenter', 'unclustered-point', () => { this.map.getCanvas().style.cursor = 'pointer'; });
     this.map.on('mouseleave', 'unclustered-point', () => { this.map.getCanvas().style.cursor = ''; });
   },
@@ -232,34 +250,37 @@ const TrinetMap = {
     this.currentBasemap = styleKey;
     const tileUrl = this.BASEMAP_SOURCES[styleKey] || this.BASEMAP_SOURCES.light;
     
-    // Smoothly swap raster tiles
-    const source = this.map.getSource('basemap-tiles');
-    if (source) {
-      this.map.removeLayer('unclustered-point');
-      this.map.removeLayer('cluster-count');
-      this.map.removeLayer('clusters');
-      this.map.removeLayer('basemap-layer');
-      this.map.removeSource('basemap-tiles');
-      this.map.removeSource('facilities');
-
-      this.map.addSource('basemap-tiles', {
-        type: 'raster',
-        tiles: [tileUrl],
-        tileSize: 256
-      });
-
-      this.map.addLayer({
-        id: 'basemap-layer',
-        type: 'raster',
-        source: 'basemap-tiles',
-        minzoom: 0,
-        maxzoom: 19
-      });
-
-      this.setupNativeLayers();
-      if (this.map.getSource('facilities')) {
-        this.map.getSource('facilities').setData(this.geojsonData);
+    // Safely remove layers if present
+    ['unclustered-point', 'clusters', 'clusters-glow', 'basemap-layer'].forEach(layerId => {
+      if (this.map.getLayer(layerId)) {
+        this.map.removeLayer(layerId);
       }
+    });
+
+    if (this.map.getSource('basemap-tiles')) {
+      this.map.removeSource('basemap-tiles');
+    }
+    if (this.map.getSource('facilities')) {
+      this.map.removeSource('facilities');
+    }
+
+    this.map.addSource('basemap-tiles', {
+      type: 'raster',
+      tiles: [tileUrl],
+      tileSize: 256
+    });
+
+    this.map.addLayer({
+      id: 'basemap-layer',
+      type: 'raster',
+      source: 'basemap-tiles',
+      minzoom: 0,
+      maxzoom: 19
+    });
+
+    this.setupNativeLayers();
+    if (this.map.getSource('facilities')) {
+      this.map.getSource('facilities').setData(this.geojsonData);
     }
   },
 
