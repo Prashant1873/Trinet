@@ -190,48 +190,43 @@ const TrinetFilters = {
   setFiltersFromAI(aiFilters) {
     if (!aiFilters) return;
 
-    if (aiFilters.industry !== undefined) {
-      this.state.industry = aiFilters.industry || '';
-      const el = document.getElementById('filter-industry');
-      if (el) el.value = this.state.industry;
-    }
+    // Reset previous filter states before applying new AI search parameters
+    this.state.industry = aiFilters.industry || '';
+    const indEl = document.getElementById('filter-industry');
+    if (indEl) indEl.value = this.state.industry;
 
-    if (aiFilters.state !== undefined) {
-      this.state.state = aiFilters.state || '';
-      const el = document.getElementById('filter-state');
-      if (el) el.value = this.state.state;
-    }
+    this.state.state = aiFilters.state || '';
+    const stateEl = document.getElementById('filter-state');
+    if (stateEl) stateEl.value = this.state.state;
 
-    if (aiFilters.city !== undefined) {
-      this.state.city = aiFilters.city || '';
-      const el = document.getElementById('filter-city');
-      if (el) el.value = this.state.city;
-    }
+    this.state.city = aiFilters.city || '';
+    const cityEl = document.getElementById('filter-city');
+    if (cityEl) cityEl.value = this.state.city;
+
+    this.state.search = aiFilters.search || '';
 
     if (aiFilters.scale) {
       this.state.scale = Array.isArray(aiFilters.scale) ? aiFilters.scale : [aiFilters.scale];
-      document.querySelectorAll('.filter-scale-checkbox').forEach(cb => {
-        cb.checked = this.state.scale.includes(cb.value);
-      });
+    } else {
+      this.state.scale = [];
     }
+    document.querySelectorAll('.filter-scale-checkbox').forEach(cb => {
+      cb.checked = this.state.scale.includes(cb.value);
+    });
 
-    if (aiFilters.minScaleScore !== undefined) {
-      this.state.minScore = aiFilters.minScaleScore || 0;
-      const el = document.getElementById('filter-min-score');
-      const valEl = document.getElementById('score-slider-val');
-      if (el) el.value = this.state.minScore;
-      if (valEl) valEl.textContent = this.state.minScore;
-    }
+    this.state.minScore = aiFilters.minScaleScore || 0;
+    const scoreEl = document.getElementById('filter-min-score');
+    const valEl = document.getElementById('score-slider-val');
+    if (scoreEl) scoreEl.value = this.state.minScore;
+    if (valEl) valEl.textContent = this.state.minScore;
 
-    if (aiFilters.isExporter !== undefined) {
-      this.state.isExporter = aiFilters.isExporter;
-      const el = document.getElementById('filter-exporter');
-      if (el) el.checked = !!aiFilters.isExporter;
-    }
+    this.state.isExporter = aiFilters.isExporter !== undefined ? aiFilters.isExporter : null;
+    const expEl = document.getElementById('filter-exporter');
+    if (expEl) expEl.checked = !!aiFilters.isExporter;
 
-    if (aiFilters.search !== undefined) {
-      this.state.search = aiFilters.search || '';
-    }
+    this.state.capability = aiFilters.capability || '';
+    this.state.isPublic = aiFilters.isPublic !== undefined ? aiFilters.isPublic : null;
+    this.state.verification = aiFilters.verification || null;
 
     this.applyFilters();
   },
