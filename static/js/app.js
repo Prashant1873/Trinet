@@ -77,6 +77,7 @@ const TrinetApp = {
       mapContainer.style.display = 'block';
       sidebar.style.display = 'flex';
       sidebar.style.width = ''; // Reset from 100% back to default CSS variable
+      dashboardView.style.display = 'none';
       dashboardView.classList.remove('active');
       if (expandBtn) {
         expandBtn.style.display = sidebar.classList.contains('collapsed') ? 'inline-flex' : 'none';
@@ -96,6 +97,7 @@ const TrinetApp = {
       if (expandBtn) {
         expandBtn.style.display = 'none';
       }
+      dashboardView.style.display = 'none';
       dashboardView.classList.remove('active');
       this.switchSidebarTab('results');
     } else if (viewName === 'dashboard') {
@@ -105,6 +107,7 @@ const TrinetApp = {
       if (expandBtn) {
         expandBtn.style.display = 'none';
       }
+      dashboardView.style.display = 'block';
       dashboardView.classList.add('active');
       TrinetDashboard.fetchDashboardData();
     }
