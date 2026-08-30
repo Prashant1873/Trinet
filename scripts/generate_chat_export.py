@@ -1,6 +1,6 @@
 """
-TRINET™ Chat & Session Export Generator (Sanitized)
-Extracts conversation history, design decisions, implementation details, and verification results into a clean markdown document.
+TRINET™ Chat & Session Export Generator (Complete & Untruncated)
+Extracts full conversation history from transcript_full.jsonl.
 Redacts any API keys, tokens, or credentials for security.
 """
 
@@ -19,7 +19,7 @@ def sanitize_text(text):
     return text
 
 def generate_chat_export():
-    transcript_path = r"C:\Users\u1233270\.gemini\antigravity-ide\brain\aa5bac27-4a4d-46c7-b841-c0ed71282564\.system_generated\logs\transcript.jsonl"
+    transcript_path = r"C:\Users\u1233270\.gemini\antigravity-ide\brain\aa5bac27-4a4d-46c7-b841-c0ed71282564\.system_generated\logs\transcript_full.jsonl"
     output_path = r"c:\Users\u1233270\Downloads\MSME_FINDER\CHAT_EXPORT.md"
     
     entries = []
@@ -97,7 +97,7 @@ def generate_chat_export():
         out.write("- **Backend Verification Suite (`scripts/run_e2e_tests.py`):** 14/14 Tests Passed (100%)\n\n")
         out.write("**Generated Export Artifact:** `CHAT_EXPORT.md`\n")
 
-    print(f"Sanitized export generated successfully at: {output_path}")
+    print(f"Full untruncated export generated successfully at: {output_path}")
 
 if __name__ == '__main__':
     generate_chat_export()

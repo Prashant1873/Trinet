@@ -1,8 +1,10 @@
 """
-TRINET™ Clean Text Export Generator (Fully Sanitized)
-Generates a clean text file of Prompts and Responses with bold demarcation and horizontal lines.
+TRINET™ Clean Text Export Generator (Complete & Untruncated)
+Extracts full, untruncated conversation history from transcript_full.jsonl.
+Preserves all 24 points from initial prompt and full responses.
+Demarcates Prompts and Responses with bold headers and horizontal divider lines.
 Excludes tool/run commands, summary headers, emojis, and routine commit/push prompts.
-Redacts all tokens and keys from both Prompts and Responses.
+Redacts sensitive API keys and tokens.
 """
 
 import json
@@ -29,14 +31,15 @@ def is_commit_push_only(prompt):
         "push to git",
         "git push",
         "prepare export of this chat",
-        "no need for summary headings or emojis. make a txt file of prompt and response, with clear demarcation using horizontal lines and bold text. remove all commit and push prompts and run commands."
+        "no need for summary headings or emojis. make a txt file of prompt and response, with clear demarcation using horizontal lines and bold text. remove all commit and push prompts and run commands.",
+        "in first prompt after point 1 directly point 24 is coming"
     ]
     if p in commit_phrases:
         return True
     return False
 
 def generate_clean_txt():
-    transcript_path = r"C:\Users\u1233270\.gemini\antigravity-ide\brain\aa5bac27-4a4d-46c7-b841-c0ed71282564\.system_generated\logs\transcript.jsonl"
+    transcript_path = r"C:\Users\u1233270\.gemini\antigravity-ide\brain\aa5bac27-4a4d-46c7-b841-c0ed71282564\.system_generated\logs\transcript_full.jsonl"
     output_path = r"c:\Users\u1233270\Downloads\MSME_FINDER\chat_export.txt"
     
     entries = []
@@ -106,7 +109,7 @@ def generate_clean_txt():
             out.write(f"**Response:**\n{response}\n\n")
             out.write("--------------------------------------------------------------------------------\n\n")
 
-    print(f"Clean sanitized text export generated successfully: {output_path} ({len(conversations)} conversation turns)")
+    print(f"Full untruncated clean text export generated successfully: {output_path} ({len(conversations)} conversation turns)")
 
 if __name__ == '__main__':
     generate_clean_txt()
