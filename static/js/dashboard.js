@@ -4,7 +4,7 @@
  */
 
 const TrinetDashboard = {
-  activeTab: 'corridors',
+  activeTab: 'states',
 
   init() {
     this.fetchDashboardData();
@@ -24,20 +24,20 @@ const TrinetDashboard = {
     const statesView = document.getElementById('states-coverage-view');
 
     if (tabCorridorsBtn && tabStatesBtn) {
+      tabStatesBtn.addEventListener('click', () => {
+        this.activeTab = 'states';
+        tabStatesBtn.classList.add('active');
+        tabCorridorsBtn.classList.remove('active');
+        if (statesView) statesView.style.display = 'block';
+        if (corridorsView) corridorsView.style.display = 'none';
+      });
+
       tabCorridorsBtn.addEventListener('click', () => {
         this.activeTab = 'corridors';
         tabCorridorsBtn.classList.add('active');
         tabStatesBtn.classList.remove('active');
         if (corridorsView) corridorsView.style.display = 'block';
         if (statesView) statesView.style.display = 'none';
-      });
-
-      tabStatesBtn.addEventListener('click', () => {
-        this.activeTab = 'states';
-        tabStatesBtn.classList.add('active');
-        tabCorridorsBtn.classList.remove('active');
-        if (corridorsView) corridorsView.style.display = 'none';
-        if (statesView) statesView.style.display = 'block';
       });
     }
   },
@@ -60,8 +60,8 @@ const TrinetDashboard = {
       const covRes = await fetch('/api/discovery/coverage');
       const covData = await covRes.json();
       
-      this.renderCorridorsTable(covData.corridors || []);
       this.renderCoverageTable(covData.coverage || []);
+      this.renderCorridorsTable(covData.corridors || []);
     } catch (e) {
       console.error('Failed to load dashboard statistics', e);
     }
@@ -92,25 +92,25 @@ const TrinetDashboard = {
       const moreNodes = corr.nodes.length > 3 ? ` <span class="text-tertiary">(+${corr.nodes.length - 3} more)</span>` : '';
 
       // Sectors preview
-      const sectorsPreview = corr.focus_sectors.slice(0, 3).map(s => `<span class="badge badge-neutral" style="font-size:0.7rem; padding:1px 6px;">${s}</span>`).join(' ');
+      const sectorsPreview = corr.focus_sectors.slice(0, 3).map(s => `<span class="badge badge-neutral" style="font-size:0.7rem; padding:2px 6px;">${s}</span>`).join(' ');
 
       tr.innerHTML = `
         <td class="text-left">
-          <div class="font-semibold text-body" style="color:var(--text-primary); cursor:pointer;" onclick="TrinetDashboard.inspectCorridor('${corr.code}')">
+          <div class="font-semibold" style="color:var(--text-primary); cursor:pointer;" onclick="TrinetDashboard.inspectCorridor('${corr.code}')">
             ${corr.name}
           </div>
-          <div class="text-caption text-secondary flex items-center gap-1 mt-0.5">
+          <div class="caption text-secondary flex items-center gap-1 mt-0.5">
             <span class="badge" style="background:var(--primary-ghost); color:var(--primary); font-weight:700; font-size:0.68rem;">${corr.code}</span>
             <span>${corr.states.length} States • ${corr.length_km} km</span>
           </div>
         </td>
         <td>
-          <span class="badge" style="background:${statusColor}20; color:${statusColor}; font-weight:600; font-size:0.72rem;">${statusText}</span>
+          <span class="badge" style="background:${statusColor}18; color:${statusColor}; border:1px solid ${statusColor}30; font-weight:600; font-size:0.72rem;">${statusText}</span>
         </td>
-        <td class="text-left text-caption text-secondary" style="max-width:240px;">
+        <td class="text-left caption text-secondary" style="max-width:240px; white-space:normal; line-height:1.4;">
           ${nodesPreview}${moreNodes}
         </td>
-        <td class="text-left">
+        <td class="text-left" style="white-space:normal;">
           <div class="flex items-center gap-1" style="flex-wrap:wrap;">${sectorsPreview}</div>
         </td>
         <td style="font-variant-numeric: tabular-nums; font-weight:600;">
@@ -118,13 +118,13 @@ const TrinetDashboard = {
         </td>
         <td>
           <div class="flex items-center justify-center gap-2">
-            <span class="font-semibold" style="font-variant-numeric: tabular-nums;">${score}%</span>
+            <span class="font-semibold" style="font-variant-numeric: tabular-nums; font-size:0.8rem;">${score}%</span>
             <div style="width:55px; height:6px; background:var(--separator); border-radius:var(--radius-full); overflow:hidden;">
               <div style="width:${score}%; height:100%; background:${statusColor}; border-radius:var(--radius-full);"></div>
             </div>
           </div>
         </td>
-        <td>
+        <td style="text-align:right;">
           <button class="btn btn-secondary btn-sm" style="font-size:0.75rem; height:28px; padding:0 8px;" onclick="TrinetDashboard.scanCorridor('${corr.code}', '${corr.name}')">
             <i data-lucide="scan" style="width:12px; height:12px;"></i> Discover
           </button>
@@ -146,31 +146,62 @@ const TrinetDashboard = {
       
       const score = item.coverage_score || 0;
       let statusColor = '#94A3B8';
-      let statusText = item.status || 'NOT_STARTED';
+      let statusText = item.status || 'INITIAL';
 
-      if (score >= 60) {
+      if (score >= 80) {
         statusColor = '#00A06C';
-      } else if (score >= 30) {
+        statusText = 'COMPREHENSIVE';
+      } else if (score >= 40) {
+        statusColor = '#0071E3';
+        statusText = 'ACTIVE_COVERAGE';
+      } else if (score > 0) {
         statusColor = '#F59E0B';
+        statusText = 'PARTIAL';
       }
 
       tr.innerHTML = `
-        <td class="font-semibold text-left">${item.state}</td>
-        <td><span class="badge" style="background:${statusColor}20; color:${statusColor}; font-weight:600;">${statusText}</span></td>
+        <td class="font-semibold text-left">
+          <div class="flex items-center gap-2">
+            <span style="color:var(--text-primary); font-weight:650;">${item.state}</span>
+          </div>
+        </td>
+        <td>
+          <span class="badge" style="background:${statusColor}18; color:${statusColor}; border:1px solid ${statusColor}30; font-weight:600; font-size:0.72rem;">${statusText}</span>
+        </td>
         <td>
           <div class="flex items-center justify-center gap-2">
-            <span class="font-semibold" style="font-variant-numeric: tabular-nums;">${score}/100</span>
-            <div style="width:70px; height:6px; background:var(--separator); border-radius:var(--radius-full); overflow:hidden;">
-              <div style="width:${score}%; height:100%; background:${statusColor}; border-radius:var(--radius-full);"></div>
+            <span class="font-semibold" style="font-variant-numeric: tabular-nums; font-size:0.8rem; min-width:48px;">${score}/100</span>
+            <div style="flex:1; max-width:80px; height:6px; background:var(--separator); border-radius:var(--radius-full); overflow:hidden;">
+              <div style="width:${Math.max(score, 6)}%; height:100%; background:${statusColor}; border-radius:var(--radius-full);"></div>
             </div>
           </div>
         </td>
-        <td style="font-variant-numeric: tabular-nums;">${(item.companies_discovered || 0).toLocaleString()}</td>
-        <td style="font-variant-numeric: tabular-nums;">${(item.facilities_discovered || 0).toLocaleString()}</td>
-        <td>${item.search_count || 1}</td>
+        <td style="font-variant-numeric: tabular-nums; font-weight:600;">${(item.companies_discovered || 0).toLocaleString()}</td>
+        <td style="font-variant-numeric: tabular-nums; font-weight:600;">${(item.facilities_discovered || 0).toLocaleString()}</td>
+        <td style="font-variant-numeric: tabular-nums;">${item.search_count || 1}</td>
+        <td style="text-align:right;">
+          <button class="btn btn-secondary btn-sm" style="font-size:0.75rem; height:28px; padding:0 10px;" onclick="TrinetDashboard.exploreState('${item.state}')">
+            <i data-lucide="map-pin" style="width:12px; height:12px;"></i> View on Map
+          </button>
+        </td>
       `;
       tbody.appendChild(tr);
     });
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  },
+
+  exploreState(stateName) {
+    if (typeof TrinetFilters !== 'undefined') {
+      const stateSelect = document.getElementById('filter-state');
+      if (stateSelect) stateSelect.value = stateName;
+      TrinetFilters.state.state = stateName;
+      TrinetFilters.applyFilters();
+    }
+    if (typeof TrinetApp !== 'undefined') {
+      TrinetApp.switchView('map');
+      TrinetApp.showToast(`Filtered to ${stateName}`, 'info');
+    }
   },
 
   async scanCorridor(corridorCode, corridorName) {

@@ -388,12 +388,17 @@
 
     <!-- ── DISCOVERY COVERAGE DASHBOARD VIEW (Swappable with Map) ── -->
     <div id="dashboard-view">
-      <div style="max-width:1200px; margin:0 auto;">
+      <div class="dashboard-container">
         
         <!-- Header -->
-        <div style="margin-bottom:var(--space-6);">
-          <h1 class="text-title-1">Discovery Coverage & Intelligence Dashboard</h1>
-          <p class="text-body text-secondary mt-1">Track systematic discovery progress across India's 36 States/UTs, industrial corridors, and categories.</p>
+        <div style="margin-bottom:var(--space-6); display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:var(--space-4);">
+          <div>
+            <h1 class="headline-lg">Discovery Coverage & Industrial Intelligence</h1>
+            <p class="body-md text-secondary mt-1">Track verified MSME & manufacturing discovery progress across India's 36 States/UTs, 13 industrial corridors, and critical sectors.</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="TrinetDashboard.fetchDashboardData()">
+            <i data-lucide="refresh-cw"></i> Refresh Data
+          </button>
         </div>
 
         <!-- KPI Grid -->
@@ -401,33 +406,36 @@
           <div class="stat-card">
             <div class="stat-card-label">Total Companies Identified</div>
             <div class="stat-card-value" id="dash-companies-val">500</div>
-            <div class="stat-card-sub text-accent">Active intelligence database</div>
+            <div class="stat-card-sub text-accent font-medium">Active intelligence database</div>
           </div>
           <div class="stat-card">
             <div class="stat-card-label">Physical Facilities Mapped</div>
             <div class="stat-card-value" id="dash-facilities-val">861</div>
-            <div class="stat-card-sub text-secondary">Across 49 manufacturing cities</div>
+            <div class="stat-card-sub text-secondary font-medium">Across 49 manufacturing cities</div>
           </div>
           <div class="stat-card">
             <div class="stat-card-label">National Coverage Score</div>
             <div class="stat-card-value" id="dash-coverage-val">74/100</div>
-            <div class="stat-card-sub text-secondary">Based on discovery methodology</div>
+            <div class="stat-card-sub text-secondary font-medium">Based on discovery methodology</div>
           </div>
           <div class="stat-card">
             <div class="stat-card-label">Active Exporters Cataloged</div>
             <div class="stat-card-value" id="dash-exporters-val">128</div>
-            <div class="stat-card-sub text-accent">Export verification tracked</div>
+            <div class="stat-card-sub text-accent font-medium">Export verification tracked</div>
           </div>
         </div>
 
         <!-- Trigger Live Discovery Box -->
-        <div class="card mb-6" style="background:var(--surface-heavy);">
-          <h3 class="text-title-3 mb-2">Run Live Discovery Pipeline</h3>
-          <p class="text-body text-secondary mb-4">Execute live Google Places & Apify scraping pipelines to expand coverage for a specific sector or industrial region.</p>
+        <div class="card mb-6" style="background:var(--surface-heavy); border:1px solid var(--border); border-radius:var(--radius-xl); padding:var(--space-5);">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="title-md font-semibold">Run Live Discovery Pipeline</h3>
+            <span class="badge badge-primary" style="font-size:0.7rem;">Live Scraping & Synthesis</span>
+          </div>
+          <p class="body-md text-secondary mb-4">Execute live Google Places & Apify scraping pipelines to expand coverage for a specific sector or industrial region.</p>
           
-          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) 120px; gap:var(--space-3); align-items:flex-end;">
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) auto; gap:var(--space-3); align-items:flex-end;">
             <div>
-              <label class="text-caption text-tertiary">Industry</label>
+              <label class="caption text-tertiary">Industry</label>
               <select id="discovery-industry-input" class="input select">
                 <option value="Automotive">Automotive</option>
                 <option value="Pharmaceuticals">Pharmaceuticals</option>
@@ -439,7 +447,7 @@
               </select>
             </div>
             <div>
-              <label class="text-caption text-tertiary">Target Corridor / State / City</label>
+              <label class="caption text-tertiary">Target Corridor / State / City</label>
               <input type="text" id="discovery-location-input" class="input" list="corridor-datalist" placeholder="e.g. DMIC, UPDIC, or Pune">
               <datalist id="corridor-datalist">
                 <option value="DMIC">Delhi-Mumbai Industrial Corridor (Dholera, AURIC, Manesar, Sanand)</option>
@@ -458,13 +466,13 @@
               </datalist>
             </div>
             <div>
-              <label class="text-caption text-tertiary">Discovery Engine</label>
+              <label class="caption text-tertiary">Discovery Engine</label>
               <select id="discovery-source-input" class="input select">
                 <option value="GOOGLE_PLACES">Google Places API</option>
                 <option value="APIFY_MAPS">Apify Maps Scraper</option>
               </select>
             </div>
-            <button class="btn btn-primary" id="run-discovery-btn" style="height:38px;">
+            <button class="btn btn-primary" id="run-discovery-btn" style="height:38px; min-width:120px;">
               <i data-lucide="play" style="width:14px; height:14px;"></i> Discover
             </button>
           </div>
@@ -472,63 +480,64 @@
           <div id="discovery-progress" style="display:none; margin-top:var(--space-4); padding:var(--space-3); border-radius:var(--radius-md); background:var(--primary-ghost);">
             <div class="flex items-center gap-2">
               <div class="ai-loading-dot"></div>
-              <span class="text-body font-medium" id="discovery-progress-text">Running discovery workflow...</span>
+              <span class="body-md font-medium" id="discovery-progress-text">Running discovery workflow...</span>
             </div>
           </div>
         </div>
 
         <!-- Tabbed Discovery Coverage Section -->
-        <div class="card mb-6">
-          <div class="flex items-center justify-between mb-4" style="flex-wrap:wrap; gap:var(--space-2);">
+        <div class="card mb-6" style="border:1px solid var(--border); border-radius:var(--radius-xl); padding:var(--space-5);">
+          <div class="flex items-center justify-between mb-4" style="flex-wrap:wrap; gap:var(--space-3);">
             <div>
-              <h3 class="text-title-3">Systematic Coverage Intelligence</h3>
-              <p class="text-caption text-secondary">National Industrial Corridors (NICDC & Defence) and State-wise Discovery Matrices</p>
+              <h3 class="title-md font-semibold">Systematic Coverage Intelligence</h3>
+              <p class="caption text-secondary mt-0.5">State-by-State Progress Matrices & 13 National Industrial Corridors</p>
             </div>
-            <div class="flex items-center gap-1" style="background:var(--surface-ghost); padding:3px; border-radius:var(--radius-md);">
-              <button class="btn btn-sm btn-ghost active" id="tab-corridors-btn" style="border-radius:var(--radius-sm); font-size:0.8rem;">
-                <i data-lucide="milestone" style="width:13px; height:13px;"></i> Industrial Corridors (13)
+            <div class="flex items-center gap-1" style="background:var(--bg-secondary); padding:4px; border-radius:var(--radius-control); border:1px solid var(--border);">
+              <button class="btn btn-sm btn-ghost active" id="tab-states-btn" style="border-radius:var(--radius-sm); font-size:0.8rem; font-weight:600;">
+                <i data-lucide="map" style="width:14px; height:14px;"></i> States & UTs (36)
               </button>
-              <button class="btn btn-sm btn-ghost" id="tab-states-btn" style="border-radius:var(--radius-sm); font-size:0.8rem;">
-                <i data-lucide="map" style="width:13px; height:13px;"></i> States & UTs (36)
+              <button class="btn btn-sm btn-ghost" id="tab-corridors-btn" style="border-radius:var(--radius-sm); font-size:0.8rem; font-weight:600;">
+                <i data-lucide="milestone" style="width:14px; height:14px;"></i> Industrial Corridors (13)
               </button>
             </div>
           </div>
 
-          <!-- Corridors View -->
-          <div id="corridors-coverage-view" class="coverage-table-container">
-            <table class="coverage-table" id="corridor-matrix-table">
-              <thead>
-                <tr>
-                  <th style="width:220px;">Industrial Corridor</th>
-                  <th>Status</th>
-                  <th>Key Smart Nodes & Clusters</th>
-                  <th>Focus Sectors</th>
-                  <th>Facilities Mapped</th>
-                  <th>Coverage</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="corridor-matrix-body">
-                <!-- Dynamically populated with 13 corridors -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- States View (Hidden by default) -->
-          <div id="states-coverage-view" class="coverage-table-container" style="display:none;">
+          <!-- States View (Default Active) -->
+          <div id="states-coverage-view" class="coverage-table-container">
             <table class="coverage-table" id="coverage-matrix-table">
               <thead>
                 <tr>
-                  <th>State / UT</th>
+                  <th style="width:240px;">State / Union Territory</th>
                   <th>Coverage Status</th>
-                  <th>Coverage Score</th>
+                  <th style="width:200px;">Coverage Score</th>
                   <th>Companies Found</th>
                   <th>Facilities Mapped</th>
                   <th>Searches Run</th>
+                  <th style="text-align:right;">Action</th>
                 </tr>
               </thead>
               <tbody id="coverage-matrix-body">
                 <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Corridors View -->
+          <div id="corridors-coverage-view" class="coverage-table-container" style="display:none;">
+            <table class="coverage-table" id="corridor-matrix-table">
+              <thead>
+                <tr>
+                  <th style="width:240px;">Industrial Corridor</th>
+                  <th>Status</th>
+                  <th>Key Smart Nodes & Clusters</th>
+                  <th>Focus Sectors</th>
+                  <th>Facilities Mapped</th>
+                  <th style="width:160px;">Coverage</th>
+                  <th style="text-align:right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="corridor-matrix-body">
+                <!-- Dynamically populated with 13 corridors -->
               </tbody>
             </table>
           </div>
