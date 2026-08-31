@@ -74,11 +74,12 @@ const TrinetApp = {
     const expandBtn = document.getElementById('sidebar-expand-btn');
 
     if (viewName === 'map') {
-      mapContainer.style.display = 'block';
-      sidebar.style.display = 'flex';
-      sidebar.style.width = ''; // Reset from 100% back to default CSS variable
       dashboardView.style.display = 'none';
       dashboardView.classList.remove('active');
+      mapContainer.style.display = 'block';
+      sidebar.style.display = 'flex';
+      sidebar.style.width = ''; // Resets smoothly from 100% back to default 420px
+      
       if (expandBtn) {
         expandBtn.style.display = sidebar.classList.contains('collapsed') ? 'inline-flex' : 'none';
       }
@@ -87,18 +88,18 @@ const TrinetApp = {
           TrinetMap.map.resize();
           TrinetMap.refreshMarkers();
         }
-      }, 150);
+      }, 320);
     } else if (viewName === 'companies') {
-      mapContainer.style.display = 'none';
+      dashboardView.style.display = 'none';
+      dashboardView.classList.remove('active');
+      mapContainer.style.display = 'block'; // Keep map stable in background
       sidebar.style.display = 'flex';
-      sidebar.style.width = '100%';
-      // Force uncollapse sidebar so full directory catalog is visible
-      sidebar.classList.remove('collapsed');
+      sidebar.classList.remove('collapsed'); // Ensure it is uncollapsed
+      sidebar.style.width = '100%'; // Smoothly expands across the full viewport
+      
       if (expandBtn) {
         expandBtn.style.display = 'none';
       }
-      dashboardView.style.display = 'none';
-      dashboardView.classList.remove('active');
       this.switchSidebarTab('results');
     } else if (viewName === 'dashboard') {
       mapContainer.style.display = 'none';
@@ -160,8 +161,8 @@ const TrinetApp = {
 
       setTimeout(() => {
         TrinetMap.map?.resize();
-        TrinetMap.renderHierarchicalView();
-      }, 350);
+        TrinetMap.refreshMarkers();
+      }, 320);
     };
 
     headerToggleBtn?.addEventListener('click', toggleFn);

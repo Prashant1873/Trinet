@@ -160,40 +160,38 @@
    ────────────────────────────────────── */
 
 #sidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
   width: var(--sidebar-width);
-  min-width: 0;
   height: 100%;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--separator);
   background: var(--bg);
-  flex-shrink: 0;
-  position: relative;
-  z-index: var(--z-base);
+  z-index: var(--z-sticky);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  transition: width var(--duration-normal) var(--ease-spring),
-              opacity var(--duration-fast) var(--ease-spring);
-  will-change: width, opacity;
+  transform: translateX(0);
+  opacity: 1;
+  visibility: visible;
+  transition: transform var(--duration-normal) var(--ease-spring),
+              width var(--duration-normal) var(--ease-spring),
+              opacity var(--duration-fast) var(--ease-spring),
+              visibility var(--duration-normal);
+  will-change: transform, width, opacity;
+}
+
+#sidebar.no-transition {
+  transition: none !important;
 }
 
 #sidebar.collapsed {
-  width: 0 !important;
-  min-width: 0 !important;
-  border-right: none !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
+  transform: translateX(-100%);
   opacity: 0;
-}
-
-#sidebar.collapsed .sidebar-tabs,
-#sidebar.collapsed .sidebar-tab,
-#sidebar.collapsed .active-filters-bar,
-#sidebar.collapsed .sidebar-content,
-#sidebar.collapsed .sidebar-toggle,
-#sidebar.collapsed * {
-  display: none !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 /* Sidebar tabs */
