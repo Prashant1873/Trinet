@@ -150,7 +150,7 @@ def test_companies_pagination():
 # ── TS-07: Deep-Dive Company Details & Multi-Facility Aggregations ──
 print("\n[TS-07] Deep-Dive Company Modal & Facilities")
 
-@test("Company Details API returns multi-site facilities, capabilities & certifications")
+@test("Company Details API returns contact intelligence (email, phone), multi-site facilities & capabilities")
 def test_company_details():
     r_list = requests.get(f"{BASE_URL}/api/companies?limit=1")
     first_id = r_list.json()['data'][0]['id']
@@ -158,40 +158,62 @@ def test_company_details():
     assert r.status_code == 200
     res = r.json()
     assert 'company_name' in res['company']
+    assert res['company'].get('email') is not None, "Company email missing"
+    assert res['company'].get('phone') is not None, "Company phone missing"
     assert len(res['facilities']) >= 1
     for fac in res['facilities']:
         assert 'latitude' in fac
         assert 'longitude' in fac
         assert 'facility_type' in fac
+        assert fac.get('phone') is not None
 
 # ── TS-08: Geographic Area Export (.xlsx & .csv) ──
 print("\n[TS-08] Geographic Area Export Engine")
 
-@test("Excel Export (.xlsx) generates valid multi-sheet binary workbook")
+@test("Excel Export (.xlsx) generates valid multi-sheet binary workbook with Email & Phone columns")
 def test_excel_export():
     r = requests.post(f"{BASE_URL}/api/export", json={"format": "xlsx", "state": "Maharashtra"})
     assert r.status_code == 200
     assert len(r.content) > 10000
     assert r.content[:2] == b'PK'
+    import openpyxl
+    wb = openpyxl.load_workbook(io.BytesIO(r.content))
+    assert "Companies" in wb.sheetnames
+    assert "Facilities" in wb.sheetnames
+    comp_headers = [c.value for c in wb["Companies"][1]]
+    fac_headers = [c.value for c in wb["Facilities"][1]]
+    assert "Email" in comp_headers and "Phone" in comp_headers
+    assert "Email" in fac_headers and "Phone" in fac_headers
 
-@test("CSV Export generates valid RFC-4180 CSV stream")
+@test("CSV Export generates valid RFC-4180 CSV stream with Email & Phone columns")
 def test_csv_export():
     r = requests.post(f"{BASE_URL}/api/export", json={"format": "csv", "state": "Gujarat"})
     assert r.status_code == 200
     lines = r.text.strip().split('\n')
     assert len(lines) > 500
     assert 'Company Name' in lines[0]
+    assert 'Email' in lines[0]
+    assert 'Phone' in lines[0]
 
 # ── TS-09: Discovery Coverage & Intelligence Analytics ──
 print("\n[TS-09] Discovery Coverage Dashboard API")
 
-@test("Coverage API tracks 20+ states with discovery score matrices")
+@test("Coverage API tracks 20+ states and 13 National/Defence Industrial Corridors")
 def test_coverage_api():
     r = requests.get(f"{BASE_URL}/api/discovery/coverage")
     assert r.status_code == 200
     cov = r.json()
     assert 'coverage' in cov
     assert len(cov['coverage']) >= 20
+    assert len(cov.get('corridors', [])) == 13
+
+@test("Industrial Corridors Scanning API successfully scans corridor nodes")
+def test_corridor_scan_api():
+    r = requests.post(f"{BASE_URL}/api/discovery/corridor/scan", json={"corridor_code": "TNDIC"})
+    assert r.status_code == 200
+    data = r.json()
+    assert data.get('corridor_code') == 'TNDIC'
+    assert len(data.get('nodes_scanned', [])) > 0
 
 # ── TS-10: Basemap Layer Sources & UI Assets ──
 print("\n[TS-10] Basemap Sources & Global Stats")
@@ -219,6 +241,7 @@ if __name__ == '__main__':
     test_excel_export()
     test_csv_export()
     test_coverage_api()
+    test_corridor_scan_api()
     test_stats_api()
 
     print("\n==================================================")

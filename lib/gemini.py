@@ -240,26 +240,40 @@ def rule_based_fallback(query):
         filters['capability'] = 'Rubber Moulding'
         applied_desc.append("Capability: Rubber Moulding")
             
-    # Check cities & map action
-    for city_name, coords in CITIES_COORDS.items():
-        if city_name in q_lower:
-            cap_city = city_name.capitalize()
-            # Map Chakan, Bhosari, Talegaon, Pimpri to Pune if searching in db
-            if city_name in ['chakan', 'bhosari', 'pimpri', 'talegaon', 'ranjangaon']:
-                filters['city'] = 'Pune'
-            elif city_name in ['manesar']:
-                filters['city'] = 'Gurugram'
-            elif city_name in ['sanand']:
-                filters['city'] = 'Ahmedabad'
-            elif city_name in ['peenya']:
-                filters['city'] = 'Bengaluru'
-            elif city_name in ['mysore', 'mysuru']:
-                filters['city'] = 'Mysuru'
-            else:
-                filters['city'] = cap_city
-            map_action = {"center": coords, "zoom": 12.5}
-            applied_desc.append(f"Location: {cap_city}")
+    # Check industrial corridors
+    from lib.corridors import INDUSTRIAL_CORRIDORS
+    for corr in INDUSTRIAL_CORRIDORS:
+        c_code = corr['code'].lower()
+        c_name = corr['name'].lower()
+        if c_code in q_lower or c_name in q_lower or (c_code == 'updic' and 'up defence' in q_lower) or (c_code == 'tndic' and 'tamil nadu defence' in q_lower):
+            map_action = {"center": corr['centroid'], "zoom": corr['zoom']}
+            applied_desc.append(f"Corridor: {corr['code']} ({corr['name']})")
+            if not filters.get('industry') and corr['focus_sectors']:
+                if 'defence' in q_lower or 'defense' in q_lower:
+                    filters['industry'] = 'Aerospace & Defence'
             break
+
+    # Check cities & map action
+    if not map_action:
+        for city_name, coords in CITIES_COORDS.items():
+            if city_name in q_lower:
+                cap_city = city_name.capitalize()
+                # Map Chakan, Bhosari, Talegaon, Pimpri to Pune if searching in db
+                if city_name in ['chakan', 'bhosari', 'pimpri', 'talegaon', 'ranjangaon']:
+                    filters['city'] = 'Pune'
+                elif city_name in ['manesar']:
+                    filters['city'] = 'Gurugram'
+                elif city_name in ['sanand']:
+                    filters['city'] = 'Ahmedabad'
+                elif city_name in ['peenya']:
+                    filters['city'] = 'Bengaluru'
+                elif city_name in ['mysore', 'mysuru']:
+                    filters['city'] = 'Mysuru'
+                else:
+                    filters['city'] = cap_city
+                map_action = {"center": coords, "zoom": 12.5}
+                applied_desc.append(f"Location: {cap_city}")
+                break
             
     # Check scale
     if 'large' in q_lower or 'enterprise' in q_lower:

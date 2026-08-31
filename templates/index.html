@@ -439,8 +439,23 @@
               </select>
             </div>
             <div>
-              <label class="text-caption text-tertiary">Target State / City</label>
-              <input type="text" id="discovery-location-input" class="input" placeholder="e.g. Pune or Gujarat">
+              <label class="text-caption text-tertiary">Target Corridor / State / City</label>
+              <input type="text" id="discovery-location-input" class="input" list="corridor-datalist" placeholder="e.g. DMIC, UPDIC, or Pune">
+              <datalist id="corridor-datalist">
+                <option value="DMIC">Delhi-Mumbai Industrial Corridor (Dholera, AURIC, Manesar, Sanand)</option>
+                <option value="CBIC">Chennai-Bengaluru Industrial Corridor (Sriperumbudur, Tumakuru, Krishnapatnam)</option>
+                <option value="AKIC">Amritsar-Kolkata Industrial Corridor (Rajpura, Khurpia, Agra, Prayagraj)</option>
+                <option value="ECIC">East Coast Economic Corridor / VCIC (Vizag, Duvvada, Kopparthy, Orvakal)</option>
+                <option value="BMIC">Bengaluru-Mumbai Industrial Corridor (Dharwad, Belagavi, Chakan, TTC)</option>
+                <option value="CBIC-Kochi">CBIC Extension to Kochi via Coimbatore (Palakkad, Coimbatore)</option>
+                <option value="HNIC">Hyderabad-Nagpur Industrial Corridor (Medchal, Butibori, Hingna)</option>
+                <option value="HWIC">Hyderabad-Warangal Industrial Corridor (Kakatiya Textile Park, Genome Valley)</option>
+                <option value="HBIC">Hyderabad-Bengaluru Industrial Corridor (Zaheerabad NIMZ, Orvakal)</option>
+                <option value="OEC">Odisha Economic Corridor (Kalinganagar, Paradip, Gopalpur)</option>
+                <option value="DNIC">Delhi-Nagpur Industrial Corridor (Faridabad, Gwalior, Mandideep)</option>
+                <option value="UPDIC">Uttar Pradesh Defence Industrial Corridor (Lucknow, Kanpur, Agra, Aligarh)</option>
+                <option value="TNDIC">Tamil Nadu Defence Industrial Corridor (Chennai, Coimbatore, Hosur, Salem)</option>
+              </datalist>
             </div>
             <div>
               <label class="text-caption text-tertiary">Discovery Engine</label>
@@ -462,10 +477,45 @@
           </div>
         </div>
 
-        <!-- Geographic Coverage Table -->
+        <!-- Tabbed Discovery Coverage Section -->
         <div class="card mb-6">
-          <h3 class="text-title-3 mb-4">State-wise Discovery Coverage</h3>
-          <div class="coverage-table-container">
+          <div class="flex items-center justify-between mb-4" style="flex-wrap:wrap; gap:var(--space-2);">
+            <div>
+              <h3 class="text-title-3">Systematic Coverage Intelligence</h3>
+              <p class="text-caption text-secondary">National Industrial Corridors (NICDC & Defence) and State-wise Discovery Matrices</p>
+            </div>
+            <div class="flex items-center gap-1" style="background:var(--surface-ghost); padding:3px; border-radius:var(--radius-md);">
+              <button class="btn btn-sm btn-ghost active" id="tab-corridors-btn" style="border-radius:var(--radius-sm); font-size:0.8rem;">
+                <i data-lucide="milestone" style="width:13px; height:13px;"></i> Industrial Corridors (13)
+              </button>
+              <button class="btn btn-sm btn-ghost" id="tab-states-btn" style="border-radius:var(--radius-sm); font-size:0.8rem;">
+                <i data-lucide="map" style="width:13px; height:13px;"></i> States & UTs (36)
+              </button>
+            </div>
+          </div>
+
+          <!-- Corridors View -->
+          <div id="corridors-coverage-view" class="coverage-table-container">
+            <table class="coverage-table" id="corridor-matrix-table">
+              <thead>
+                <tr>
+                  <th style="width:220px;">Industrial Corridor</th>
+                  <th>Status</th>
+                  <th>Key Smart Nodes & Clusters</th>
+                  <th>Focus Sectors</th>
+                  <th>Facilities Mapped</th>
+                  <th>Coverage</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="corridor-matrix-body">
+                <!-- Dynamically populated with 13 corridors -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- States View (Hidden by default) -->
+          <div id="states-coverage-view" class="coverage-table-container" style="display:none;">
             <table class="coverage-table" id="coverage-matrix-table">
               <thead>
                 <tr>
@@ -514,9 +564,15 @@
       <div class="company-hero">
         <h2 class="company-hero-name" id="modal-company-name">Company Name</h2>
         <p class="company-hero-desc" id="modal-company-desc">Description</p>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2" style="flex-wrap:wrap; margin-top:var(--space-3);">
           <a href="#" target="_blank" id="modal-company-website" class="btn btn-secondary btn-sm">
             <i data-lucide="globe"></i> Official Website
+          </a>
+          <a href="#" id="modal-company-email" class="btn btn-secondary btn-sm" title="Direct Email">
+            <i data-lucide="mail"></i> <span id="modal-company-email-text">Email</span>
+          </a>
+          <a href="#" id="modal-company-phone" class="btn btn-secondary btn-sm" title="Boardline Phone">
+            <i data-lucide="phone"></i> <span id="modal-company-phone-text">Phone</span>
           </a>
           <span id="modal-company-verification" class="badge badge-verified">Verified Profile</span>
         </div>

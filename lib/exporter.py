@@ -31,7 +31,7 @@ def generate_excel_export(companies, facilities=None):
     )
     
     headers_comp = [
-        "Company Name", "Industry", "Sub-Industry", "City", "State", 
+        "Company Name", "Industry", "Sub-Industry", "Email", "Phone", "City", "State", 
         "Established", "Website", "Scale", "Scale Score", "Employees", 
         "Facilities", "Exporter", "Public", "Verification", "Updated"
     ]
@@ -49,6 +49,8 @@ def generate_excel_export(companies, facilities=None):
             c.get('company_name', ''),
             c.get('industry', ''),
             c.get('sub_industry', ''),
+            c.get('email', ''),
+            c.get('phone', ''),
             c.get('headquarters_city', ''),
             c.get('headquarters_state', ''),
             c.get('establishment_year', ''),
@@ -67,7 +69,7 @@ def generate_excel_export(companies, facilities=None):
             cell = ws_comp.cell(row=r_idx, column=col_num)
             cell.font = data_font
             cell.border = thin_border
-            if col_num in (6, 9, 10, 11): # numeric columns
+            if col_num in (8, 11, 12, 13): # numeric columns
                 cell.alignment = Alignment(horizontal="center")
                 
     # Auto-adjust column widths
@@ -81,8 +83,8 @@ def generate_excel_export(companies, facilities=None):
         ws_fac = wb.create_sheet(title="Facilities")
         headers_fac = [
             "Company Name", "Facility Name", "Facility Type", "Address", 
-            "City", "State", "District", "PIN Code", "Latitude", "Longitude", 
-            "Phone", "Google Rating", "Review Count", "Status"
+            "City", "State", "District", "PIN Code", "Email", "Phone", 
+            "Latitude", "Longitude", "Google Rating", "Review Count", "Status"
         ]
         ws_fac.append(headers_fac)
         for col_num, _ in enumerate(headers_fac, 1):
@@ -102,9 +104,10 @@ def generate_excel_export(companies, facilities=None):
                 f.get('state', ''),
                 f.get('district', ''),
                 f.get('pincode', ''),
+                f.get('email', ''),
+                f.get('phone', ''),
                 f.get('latitude', ''),
                 f.get('longitude', ''),
-                f.get('phone', ''),
                 f.get('google_rating', ''),
                 f.get('review_count', ''),
                 f.get('operational_status', '')
@@ -114,7 +117,7 @@ def generate_excel_export(companies, facilities=None):
                 cell = ws_fac.cell(row=r_idx, column=col_num)
                 cell.font = data_font
                 cell.border = thin_border
-                if col_num in (8, 9, 10, 12, 13):
+                if col_num in (8, 10, 11, 12, 13, 14):
                     cell.alignment = Alignment(horizontal="center")
                     
         for col in ws_fac.columns:
@@ -135,7 +138,7 @@ def generate_csv_export(companies):
     writer = csv.writer(output)
     
     headers = [
-        "Company Name", "Industry", "Sub-Industry", "City", "State", 
+        "Company Name", "Industry", "Sub-Industry", "Email", "Phone", "City", "State", 
         "Year Established", "Website", "Scale", "Scale Score", "Employees", 
         "Facilities", "Exporter", "Public Company", "Verification Status", "Last Updated"
     ]
@@ -146,6 +149,8 @@ def generate_csv_export(companies):
             c.get('company_name', ''),
             c.get('industry', ''),
             c.get('sub_industry', ''),
+            c.get('email', ''),
+            c.get('phone', ''),
             c.get('headquarters_city', ''),
             c.get('headquarters_state', ''),
             c.get('establishment_year', ''),

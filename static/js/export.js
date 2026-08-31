@@ -107,6 +107,8 @@ const TrinetExport = {
       "Company Name": c.company_name,
       "Industry": c.industry || '',
       "Sub-Industry": c.sub_industry || '',
+      "Email": c.email || '',
+      "Phone": c.phone || '',
       "City": c.headquarters_city || '',
       "State": c.headquarters_state || '',
       "Year Established": c.establishment_year || '',

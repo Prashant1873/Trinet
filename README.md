@@ -28,12 +28,13 @@ TRINET™ is a comprehensive, persistent manufacturing discovery and intelligenc
 * **Map Action Automation:** Flies the camera directly to the relevant industrial cluster and presents contextual follow-up suggestions.
 * **Keyboard Shortcut:** Press `/` anywhere in the app to instantly focus the AI search bar.
 
-### 3. 📊 Dual-Sheet Data Export (Excel & CSV)
+### 3. 📊 Dual-Sheet Data Export (Excel & CSV) with Contact Intelligence
 * **Client-Side Instant Export (SheetJS):** Instant downloads directly from the browser.
 * **Server-Side Streaming Export:** Fast bulk downloads supporting up to thousands of manufacturers.
 * **Formatted Excel Workbooks (`.xlsx`):**
-  * **Sheet 1 (`Companies`):** Name, Industry, Sub-Industry, City, State, Est. Year, Website, Scale, Scale Score, Employees, Total Facilities, Exporter Status, Public Company Status, Verification Status, Last Updated.
-  * **Sheet 2 (`Facilities`):** Company Name, Facility Name, Facility Type, Address, City, State, District, PIN Code, Latitude, Longitude, Phone, Google Rating, Reviews, Operational Status.
+  * **Sheet 1 (`Companies`):** Name, Industry, Sub-Industry, Email, Phone, City, State, Est. Year, Website, Scale, Scale Score, Employees, Total Facilities, Exporter Status, Public Company Status, Verification Status, Last Updated.
+  * **Sheet 2 (`Facilities`):** Company Name, Facility Name, Facility Type, Address, City, State, District, PIN Code, Email, Phone, Latitude, Longitude, Google Rating, Reviews, Operational Status.
+* **Direct Contact Signals:** Dedicated emails and boardline phone numbers across both workbooks and CSV streams.
 
 ### 4. 🎨 Apple-Inspired Design System
 * **Fluid Physics & Spring Motion:** Immediate feedback on pointer-down (`scale(0.97)`), interruptible spring curves (`cubic-bezier(0.25, 1, 0.5, 1)`).
@@ -41,15 +42,29 @@ TRINET™ is a comprehensive, persistent manufacturing discovery and intelligenc
 * **Curated Palette:** TRINET Primary Green (`#00A06C`), Secondary Green (`#8DCCAD`), Neutral Stone (`#D8D2C8`), and Warm Accent (`#F4EBC3`).
 
 ### 5. 🏢 Slide-In Company Intelligence Drawer
+* **Contact Action Buttons:** One-click `mailto:` email and `tel:` phone quick action buttons in the hero header.
 * **Scale Score Radar (0–100):** Scale scoring based on employee counts, operational footprints, revenue tiers, export presence, and verification status.
-* **Interactive Facility Mini-Map:** Mini MapLibre map rendering all mapped physical sites for the selected enterprise.
+* **Interactive Facility Mini-Map:** Mini MapLibre map rendering all mapped physical sites with direct site dispatch emails and phones.
 * **Manufacturing Capabilities:** Tagged capabilities (CNC Machining, Forging, Casting, Stamping, Injection Moulding, etc.).
 * **Data Provenance & Traceability:** Auditable data source logs with individual confidence percentages.
 
-### 6. 📈 Discovery Coverage Dashboard
+### 6. 📈 Discovery Coverage & Industrial Corridors Dashboard
+* **13 Major Indian Industrial Corridors:** Real-time discovery coverage matrix tracking:
+  1. **DMIC** (Delhi-Mumbai Industrial Corridor)
+  2. **CBIC** (Chennai-Bengaluru Industrial Corridor)
+  3. **AKIC** (Amritsar-Kolkata Industrial Corridor)
+  4. **ECIC / VCIC** (East Coast / Vizag-Chennai Industrial Corridor)
+  5. **BMIC / BMEC** (Bengaluru-Mumbai Industrial Corridor)
+  6. **CBIC Extension to Kochi via Coimbatore**
+  7. **HNIC** (Hyderabad-Nagpur Industrial Corridor)
+  8. **HWIC** (Hyderabad-Warangal Industrial Corridor)
+  9. **HBIC** (Hyderabad-Bengaluru Industrial Corridor)
+  10. **OEC** (Odisha Economic Corridor)
+  11. **DNIC** (Delhi-Nagpur Industrial Corridor)
+  12. **UPDIC** (Uttar Pradesh Defence Industrial Corridor — 6 Nodes)
+  13. **TNDIC** (Tamil Nadu Defence Industrial Corridor — 5 Nodes)
 * **National Coverage Score:** Real-time visibility into discovery progress across India's 36 States/UTs.
-* **State-by-State Coverage Matrix:** Visual progress bars indicating discovery yield and coverage status.
-* **Live Discovery Pipelines:** Trigger automated Google Places API and Apify scraper scans for new industrial regions.
+* **Automated Corridor Scanning:** One-click multi-node discovery sweep along any industrial corridor.
 
 ---
 

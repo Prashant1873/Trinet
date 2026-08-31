@@ -82,6 +82,30 @@ const TrinetCompany = {
       }
     }
 
+    const emailBtn = document.getElementById('modal-company-email');
+    const emailText = document.getElementById('modal-company-email-text');
+    if (emailBtn) {
+      if (c.email) {
+        emailBtn.href = `mailto:${c.email}`;
+        if (emailText) emailText.textContent = c.email;
+        emailBtn.style.display = 'inline-flex';
+      } else {
+        emailBtn.style.display = 'none';
+      }
+    }
+
+    const phoneBtn = document.getElementById('modal-company-phone');
+    const phoneText = document.getElementById('modal-company-phone-text');
+    if (phoneBtn) {
+      if (c.phone) {
+        phoneBtn.href = `tel:${c.phone.replace(/\s+/g, '')}`;
+        if (phoneText) phoneText.textContent = c.phone;
+        phoneBtn.style.display = 'inline-flex';
+      } else {
+        phoneBtn.style.display = 'none';
+      }
+    }
+
     // Key Metrics
     document.getElementById('modal-metric-score').textContent = `${c.scale_score || 0}/100`;
     document.getElementById('modal-metric-hq').textContent = `${c.headquarters_city || 'India'}, ${c.headquarters_state || ''}`;
@@ -108,8 +132,9 @@ const TrinetCompany = {
             <span class="badge badge-primary">${f.facility_type || 'Factory'}</span>
           </div>
           <p class="text-caption text-secondary mt-1">${f.address || `${f.city}, ${f.state}`}</p>
-          <div class="flex items-center gap-3 mt-2 text-caption text-tertiary">
-            ${f.phone ? `<span><i data-lucide="phone" style="width:10px;height:10px;"></i> ${f.phone}</span>` : ''}
+          <div class="flex items-center gap-3 mt-2 text-caption text-tertiary" style="flex-wrap:wrap;">
+            ${f.phone ? `<span><i data-lucide="phone" style="width:11px;height:11px;"></i> <a href="tel:${f.phone.replace(/\s+/g, '')}" class="text-secondary hover:text-accent">${f.phone}</a></span>` : ''}
+            ${f.email ? `<span><i data-lucide="mail" style="width:11px;height:11px;"></i> <a href="mailto:${f.email}" class="text-secondary hover:text-accent">${f.email}</a></span>` : ''}
             ${f.google_rating ? `<span>★ ${f.google_rating} (${f.review_count || 0} reviews)</span>` : ''}
             ${f.google_maps_url ? `<a href="${f.google_maps_url}" target="_blank" class="text-accent">Google Maps ↗</a>` : ''}
           </div>

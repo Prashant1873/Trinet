@@ -143,12 +143,13 @@ const TrinetResults = {
             <span class="result-card-meta-item">
               <i data-lucide="map-pin" style="width:12px; height:12px;"></i> ${c.headquarters_city || 'India'}, ${c.headquarters_state || ''}
             </span>
-            ${c.establishment_year ? `<span class="result-card-meta-item">Est. ${c.establishment_year}</span>` : ''}
+            ${c.phone ? `<span class="result-card-meta-item" title="${c.phone}"><i data-lucide="phone" style="width:11px; height:11px;"></i> ${c.phone}</span>` : ''}
             <span class="result-card-meta-item font-semibold text-accent">${c.facility_count || 1} Sites</span>
           </div>
           <div class="result-card-tags">
             <span class="badge badge-primary">${c.industry || 'General'}</span>
             <span class="badge ${scaleBadgeClass}">${c.company_scale || 'Small'}</span>
+            ${c.email ? '<span class="badge badge-neutral" style="font-size:0.68rem;" title="' + c.email + '"><i data-lucide="mail" style="width:10px;height:10px;"></i> Direct Contact</span>' : ''}
             ${c.is_exporter ? '<span class="badge badge-neutral">Exporter</span>' : ''}
           </div>
         </div>

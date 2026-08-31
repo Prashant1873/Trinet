@@ -18,7 +18,8 @@ from lib.database import query_all, query_one, execute_write
 from lib.spatial import cluster_points, filter_by_bounds, haversine_distance
 from lib.gemini import parse_natural_language_search
 from lib.exporter import generate_excel_export, generate_csv_export
-from lib.discovery import run_discovery_pipeline
+from lib.discovery import run_discovery_pipeline, run_corridor_discovery
+from lib.corridors import INDUSTRIAL_CORRIDORS, get_all_corridors_with_stats
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
@@ -682,15 +683,43 @@ def start_discovery():
     result = run_discovery_pipeline(search_term, state=state, city=city, industry=industry, source=source)
     return jsonify(result)
 
+@app.route('/api/discovery/corridors', methods=['GET'])
+def get_discovery_corridors():
+    """
+    Get real-time statistics and node breakdown for all 13 National and Defence Industrial Corridors.
+    """
+    corridors = get_all_corridors_with_stats()
+    return jsonify({
+        "total_corridors": len(corridors),
+        "corridors": corridors
+    })
+
+@app.route('/api/discovery/corridor/scan', methods=['POST'])
+def scan_industrial_corridor():
+    """
+    Trigger an automated discovery scan across all smart nodes along a specific industrial corridor.
+    """
+    data = request.get_json() or {}
+    corridor_code = data.get('corridor_code') or data.get('code')
+    industry = data.get('industry')
+
+    if not corridor_code:
+        return jsonify({"error": "Corridor code is required (e.g. DMIC, CBIC, UPDIC, TNDIC)"}), 400
+
+    result = run_corridor_discovery(corridor_code, industry=industry)
+    return jsonify(result)
+
 @app.route('/api/discovery/coverage', methods=['GET'])
 def get_discovery_coverage():
     """
-    Get geographic discovery coverage scores and state-level statistics.
+    Get geographic discovery coverage scores, state-level statistics, and industrial corridors.
     """
     coverage = query_all("SELECT * FROM discovery_coverage ORDER BY coverage_score DESC")
     logs = query_all("SELECT * FROM discovery_logs ORDER BY searched_at DESC LIMIT 20")
+    corridors = get_all_corridors_with_stats()
     return jsonify({
         "coverage": coverage,
+        "corridors": corridors,
         "recent_logs": logs
     })
 
@@ -734,20 +763,22 @@ def get_stats():
 @app.route('/api/metadata', methods=['GET'])
 def get_metadata():
     """
-    Lookup lists for industries, capabilities, states, and cities.
+    Lookup lists for industries, capabilities, states, cities, and industrial corridors.
     """
     industries = query_all("SELECT DISTINCT name FROM industries WHERE level = 0 ORDER BY name")
     sub_industries = query_all("SELECT DISTINCT name, parent_id FROM industries WHERE level = 1 ORDER BY name")
     capabilities = query_all("SELECT DISTINCT name FROM capabilities ORDER BY name")
     states = query_all("SELECT DISTINCT headquarters_state as name FROM companies WHERE headquarters_state IS NOT NULL ORDER BY name")
     cities = query_all("SELECT DISTINCT headquarters_city as name, headquarters_state as state FROM companies WHERE headquarters_city IS NOT NULL ORDER BY name")
+    corridors = [{"code": c["code"], "name": c["name"], "focus_sectors": c["focus_sectors"]} for c in INDUSTRIAL_CORRIDORS]
     
     return jsonify({
         "industries": [i['name'] for i in industries],
         "sub_industries": [s['name'] for s in sub_industries],
         "capabilities": [c['name'] for c in capabilities],
         "states": [s['name'] for s in states],
-        "cities": cities
+        "cities": cities,
+        "corridors": corridors
     })
 
 # ──────────────────────────────────────

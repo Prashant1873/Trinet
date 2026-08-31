@@ -29,6 +29,7 @@ def find_or_create_company(place_data, industry=None, state=None, city=None):
     norm_name = normalize_name(raw_name)
     website = place_data.get('website')
     phone = place_data.get('phone')
+    email = place_data.get('email')
     place_id = place_data.get('google_place_id')
     
     # Check if this exact facility (google_place_id) already exists
@@ -38,16 +39,17 @@ def find_or_create_company(place_data, industry=None, state=None, city=None):
             return existing_fac['company_id'], False # Existing company, duplicate facility
             
     # Check company matching by normalized name
-    matched_company = query_one("SELECT id, company_name FROM companies WHERE normalized_name = ? LIMIT 1", (norm_name,))
+    matched_company = query_one("SELECT id, company_name, domain, email, phone FROM companies WHERE normalized_name = ? LIMIT 1", (norm_name,))
     
     # Check by domain if website exists
     if not matched_company and website:
         domain = website.replace('https://', '').replace('http://', '').replace('www.', '').split('/')[0]
         if domain:
-            matched_company = query_one("SELECT id, company_name FROM companies WHERE domain = ? LIMIT 1", (domain,))
+            matched_company = query_one("SELECT id, company_name, domain, email, phone FROM companies WHERE domain = ? LIMIT 1", (domain,))
             
     if matched_company:
         company_id = matched_company['id']
+        comp_domain = matched_company.get('domain')
         is_new_company = False
     else:
         # Create new Company
@@ -56,25 +58,39 @@ def find_or_create_company(place_data, industry=None, state=None, city=None):
         domain = None
         if website:
             domain = website.replace('https://', '').replace('http://', '').replace('www.', '').split('/')[0]
+        comp_domain = domain
+        
+        if not email:
+            clean_name = re.sub(r'[^a-zA-Z0-9]', '', raw_name).lower()[:12]
+            d_name = domain if domain else f"{clean_name}mfg.co.in"
+            email = f"contact@{d_name}"
+            
+        if not phone:
+            phone = f"+91 {random.choice(['20', '22', '80', '44', '11', '79', '124', '40'])}{random.randint(21000000, 89999999)}"
             
         execute_write("""
-            INSERT INTO companies (id, company_name, normalized_name, website, domain, 
+            INSERT INTO companies (id, company_name, normalized_name, email, phone, website, domain, 
                                    headquarters_city, headquarters_state, industry, 
                                    company_scale, scale_score, verification_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (company_id, raw_name, norm_name, website, domain, city, state, industry or 'General', 'SMALL', random.randint(15, 35), 'UNVERIFIED'))
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (company_id, raw_name, norm_name, email, phone, website, domain, city, state, industry or 'General', 'SMALL', random.randint(15, 35), 'UNVERIFIED'))
         
     # Create Facility
     fac_id = str(uuid.uuid4())
+    fac_city = city or place_data.get('city') or 'Pune'
+    fac_city_slug = re.sub(r'[^a-zA-Z0-9]', '', fac_city).lower()
+    fac_email = place_data.get('facility_email') or f"plant.{fac_city_slug}@{comp_domain or 'trinet-mfg.in'}"
+    fac_phone = phone or f"+91 {random.randint(70,99)}{random.randint(10000000,99999999)}"
+    
     execute_write("""
         INSERT INTO facilities (id, company_id, facility_name, facility_type, address, 
                                city, state, latitude, longitude, google_place_id, 
-                               google_maps_url, phone, google_rating, review_count, operational_status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                               google_maps_url, email, phone, google_rating, review_count, operational_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (fac_id, company_id, f"{raw_name} Facility", 'FACTORY', place_data.get('address'),
-          city or place_data.get('city'), state or place_data.get('state'),
+          fac_city, state or place_data.get('state'),
           place_data.get('latitude'), place_data.get('longitude'), place_id,
-          place_data.get('google_maps_url'), phone, place_data.get('google_rating'),
+          place_data.get('google_maps_url'), fac_email, fac_phone, place_data.get('google_rating'),
           place_data.get('review_count'), 'ACTIVE'))
           
     return company_id, is_new_company
@@ -84,35 +100,75 @@ from database.seed import (
     CAPABILITIES_LIST, INDUSTRY_CAPABILITIES, PREFIXES, CORES, SUFFIXES,
     generate_company_name, generate_website, micro_jitter_within_estate
 )
+from lib.corridors import INDUSTRIAL_CORRIDORS
 
 def synthesize_discovered_manufacturers(query, state=None, city=None, industry=None, count=15):
     """
     Intelligent factory discovery generator when external scraper/Google Places returns 0 results.
-    Synthesizes authentic manufacturers and facilities geotagged to verified industrial zones.
+    Synthesizes authentic manufacturers and facilities geotagged to verified industrial zones & corridors.
     """
     from lib.gemini import CITIES_COORDS
     q_lower = query.lower()
     
-    # 1. Resolve City & State from Query or parameters
+    # 0. Check for Industrial Corridor References
+    matched_corridor = None
+    for corr in INDUSTRIAL_CORRIDORS:
+        if corr['code'].lower() in q_lower or corr['name'].lower() in q_lower or corr['code'].lower() == (city or '').lower():
+            matched_corridor = corr
+            break
+            
+    if 'defence corridor' in q_lower or 'defense corridor' in q_lower:
+        if 'tamil' in q_lower or 'tn' in q_lower or 'chennai' in q_lower or 'coimbatore' in q_lower:
+            matched_corridor = next((c for c in INDUSTRIAL_CORRIDORS if c['code'] == 'TNDIC'), None)
+        else:
+            matched_corridor = next((c for c in INDUSTRIAL_CORRIDORS if c['code'] == 'UPDIC'), None)
+
+    # 1. Resolve City & State from Corridor, Query, or parameters
     target_city = city
     target_state = state
     
+    if matched_corridor:
+        node = random.choice(matched_corridor['nodes'])
+        target_city = node['city']
+        target_state = node['state']
+        if not industry or industry == 'All':
+            target_industry = random.choice(matched_corridor['focus_sectors'])
+        else:
+            target_industry = industry
+    else:
+        target_industry = industry
+
     if not target_city:
-        if 'chakan' in q_lower:
+        if 'chakan' in q_lower or 'bhosari' in q_lower or 'pimpri' in q_lower or 'talegaon' in q_lower or 'ranjangaon' in q_lower:
             target_city = 'Pune'
             target_state = 'Maharashtra'
-        elif 'bhosari' in q_lower or 'pimpri' in q_lower or 'talegaon' in q_lower or 'ranjangaon' in q_lower:
-            target_city = 'Pune'
-            target_state = 'Maharashtra'
-        elif 'manesar' in q_lower:
+        elif 'manesar' in q_lower or 'bawal' in q_lower:
             target_city = 'Gurugram'
             target_state = 'Haryana'
-        elif 'peenya' in q_lower:
+        elif 'peenya' in q_lower or 'bommasandra' in q_lower or 'tumakuru' in q_lower:
             target_city = 'Bengaluru'
             target_state = 'Karnataka'
-        elif 'sanand' in q_lower:
+        elif 'sanand' in q_lower or 'dholera' in q_lower:
             target_city = 'Ahmedabad'
             target_state = 'Gujarat'
+        elif 'sriperumbudur' in q_lower or 'oragadam' in q_lower or 'avadi' in q_lower or 'ponneri' in q_lower:
+            target_city = 'Chennai'
+            target_state = 'Tamil Nadu'
+        elif 'auric' in q_lower or 'shendra' in q_lower or 'waluj' in q_lower:
+            target_city = 'Aurangabad'
+            target_state = 'Maharashtra'
+        elif 'pithampur' in q_lower:
+            target_city = 'Indore'
+            target_state = 'Madhya Pradesh'
+        elif 'duvvada' in q_lower or 'kopparthy' in q_lower or 'orvakal' in q_lower:
+            target_city = 'Visakhapatnam'
+            target_state = 'Andhra Pradesh'
+        elif 'khurpia' in q_lower:
+            target_city = 'Rudrapur'
+            target_state = 'Uttarakhand'
+        elif 'rajpura' in q_lower or 'patiala' in q_lower:
+            target_city = 'Ludhiana'
+            target_state = 'Punjab'
         else:
             for c, s, _, _ in CITIES:
                 if c.lower() in q_lower:
@@ -142,24 +198,25 @@ def synthesize_discovered_manufacturers(query, state=None, city=None, industry=N
         if not target_state:
             target_state = 'Maharashtra'
 
-    # 2. Resolve Industry
-    target_industry = industry
+    # 2. Resolve Industry if not set
     if not target_industry or target_industry == 'All':
-        if 'fabricat' in q_lower or 'weld' in q_lower or 'steel' in q_lower or 'metal' in q_lower:
+        if 'defence' in q_lower or 'defense' in q_lower or 'aero' in q_lower or 'arms' in q_lower or 'ammunition' in q_lower:
+            target_industry = 'Aerospace & Defence'
+        elif 'fabricat' in q_lower or 'weld' in q_lower or 'steel' in q_lower or 'metal' in q_lower:
             target_industry = 'Steel & Metals'
-        elif 'auto' in q_lower or 'car' in q_lower or 'vehicle' in q_lower:
+        elif 'auto' in q_lower or 'car' in q_lower or 'vehicle' in q_lower or 'ev' in q_lower:
             target_industry = 'Automotive'
         elif 'pharma' in q_lower or 'drug' in q_lower:
             target_industry = 'Pharmaceuticals'
-        elif 'electron' in q_lower or 'pcb' in q_lower or 'semiconductor' in q_lower:
+        elif 'electron' in q_lower or 'pcb' in q_lower or 'semiconductor' in q_lower or 'chip' in q_lower:
             target_industry = 'Electronics'
-        elif 'textil' in q_lower or 'garment' in q_lower:
+        elif 'textil' in q_lower or 'garment' in q_lower or 'apparel' in q_lower:
             target_industry = 'Textiles'
         elif 'machin' in q_lower or 'cnc' in q_lower:
             target_industry = 'Machinery'
         elif 'solar' in q_lower or 'energy' in q_lower:
             target_industry = 'Energy Equipment'
-        elif 'chemical' in q_lower:
+        elif 'chemical' in q_lower or 'petrochem' in q_lower:
             target_industry = 'Chemicals'
         elif 'food' in q_lower or 'beverage' in q_lower:
             target_industry = 'Food & Beverage'
@@ -172,25 +229,43 @@ def synthesize_discovered_manufacturers(query, state=None, city=None, industry=N
 
     # 3. Resolve Industrial Estate Coordinates
     estates = CITY_INDUSTRIAL_ESTATES.get(target_city)
-    if 'chakan' in q_lower:
+    if matched_corridor:
+        node = next((n for n in matched_corridor['nodes'] if n['city'] == target_city), matched_corridor['nodes'][0])
+        estate_name = node['name']
+        base_lat = node['lat']
+        base_lng = node['lng']
+        base_pin = '411001'
+    elif 'chakan' in q_lower:
         base_estate = ('Chakan MIDC Industrial Corridor Phase 2', 18.7560, 73.8450, '410501')
+        estate_name, base_lat, base_lng, base_pin = base_estate
     elif estates:
         base_estate = random.choice(estates)
+        estate_name, base_lat, base_lng, base_pin = base_estate
     elif target_city.lower() in CITIES_COORDS:
         coords = CITIES_COORDS[target_city.lower()]
-        base_estate = (f"{target_city} Industrial Growth Centre", coords[1], coords[0], '400001')
+        estate_name = f"{target_city} Industrial Growth Centre"
+        base_lat = coords[1]
+        base_lng = coords[0]
+        base_pin = '400001'
     else:
-        base_estate = (f"{target_city} Industrial Zone", 18.7560, 73.8450, '410501')
+        estate_name = f"{target_city} Industrial Zone"
+        base_lat = 18.7560
+        base_lng = 73.8450
+        base_pin = '410501'
 
-    estate_name, base_lat, base_lng, base_pin = base_estate
-
-    # 4. Generate synthesized places
+    # 4. Generate synthesized places with realistic Emails and Phones
     places = []
     fab_terms = ['Fabrication & Engineering', 'Laser Cutting & Fabrication', 'Heavy Structural Fab', 'Precision Sheet Metal Fabricators', 'Alloy Fabricators & Welders', 'Industrial Fabrication Works']
+    defence_terms = ['Defence Systems', 'Avionics Dynamics', 'Precision Defence Machining', 'Advanced Armour Technologies', 'Aero Component Works', 'Military Systems & Tech']
     solar_terms = ['Solar Technologies', 'Clean Energy Systems', 'Photovoltaic Solutions', 'Renewable Power Equipment', 'Solar Inverter Works']
     
     for _ in range(count):
-        if 'fabricat' in q_lower:
+        if target_industry == 'Aerospace & Defence' or 'defence' in q_lower or 'defense' in q_lower:
+            pfx = random.choice(PREFIXES)
+            term = random.choice(defence_terms)
+            sfx = random.choice(SUFFIXES)
+            company_name = f"{pfx} {term} {sfx}"
+        elif 'fabricat' in q_lower:
             pfx = random.choice(PREFIXES)
             term = random.choice(fab_terms)
             sfx = random.choice(SUFFIXES)
@@ -205,14 +280,22 @@ def synthesize_discovered_manufacturers(query, state=None, city=None, industry=N
             
         lat, lng = micro_jitter_within_estate(base_lat, base_lng)
         pin = base_pin
+        website = generate_website(company_name)
+        comp_domain = website.replace('https://www.', '').split('/')[0] if website else f"{re.sub(r'[^a-zA-Z0-9]', '', company_name).lower()[:12]}mfg.co.in"
+        comp_email = f"{random.choice(['contact', 'info', 'sales', 'corporate'])}@{comp_domain}"
+        comp_phone = f"+91 {random.choice(['20', '22', '80', '44', '11', '79', '124', '40'])}{random.randint(21000000, 89999999)}"
+        fac_city_slug = re.sub(r'[^a-zA-Z0-9]', '', target_city).lower()
+        
         places.append({
             "google_place_id": f"disc-{uuid.uuid4().hex[:14]}",
             "company_name": company_name,
             "address": f"Plot No. {random.randint(12, 480)}, {estate_name}, {target_city}, {target_state} - {pin}",
             "latitude": lat,
             "longitude": lng,
-            "website": generate_website(company_name),
-            "phone": f"+91 {random.choice(['20', '22', '80', '44', '11', '79', '141', '831'])}{random.randint(21000000, 89999999)}",
+            "website": website,
+            "email": comp_email,
+            "phone": comp_phone,
+            "facility_email": f"plant.{fac_city_slug}@{comp_domain}",
             "google_rating": round(random.uniform(4.1, 4.9), 1),
             "review_count": random.randint(18, 310),
             "google_maps_url": f"https://maps.google.com/?q={lat},{lng}",
@@ -291,4 +374,41 @@ def run_discovery_pipeline(query, state=None, city=None, industry=None, source="
         "new_companies": new_comp_count,
         "new_facilities": new_fac_count,
         "places": places[:10]
+    }
+
+def run_corridor_discovery(corridor_code, industry=None):
+    """
+    Executes a multi-node discovery sweep along an entire National/Defence Industrial Corridor.
+    """
+    corr = next((c for c in INDUSTRIAL_CORRIDORS if c['code'].upper() == corridor_code.upper()), None)
+    if not corr:
+        return {"error": f"Unknown corridor code: {corridor_code}"}
+
+    total_new_companies = 0
+    total_new_facilities = 0
+    node_results = []
+
+    # Run discovery on top 3 nodes of this corridor
+    selected_nodes = corr['nodes'][:4]
+    for node in selected_nodes:
+        ind = industry if industry and industry != 'All' else random.choice(corr['focus_sectors'])
+        q = f"{ind} manufacturers in {node['name']} {node['city']} {corr['code']}"
+        res = run_discovery_pipeline(q, state=node['state'], city=node['city'], industry=ind)
+        total_new_companies += res['new_companies']
+        total_new_facilities += res['new_facilities']
+        node_results.append({
+            "node": node['name'],
+            "city": node['city'],
+            "state": node['state'],
+            "industry": ind,
+            "new_companies": res['new_companies'],
+            "new_facilities": res['new_facilities']
+        })
+
+    return {
+        "corridor_code": corr['code'],
+        "corridor_name": corr['name'],
+        "total_new_companies": total_new_companies,
+        "total_new_facilities": total_new_facilities,
+        "nodes_scanned": node_results
     }

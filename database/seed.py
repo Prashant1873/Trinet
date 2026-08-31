@@ -665,10 +665,18 @@ def seed_database(db_path):
         verification_roll = random.random()
         verification = 'VERIFIED' if verification_roll > 0.7 else ('PARTIALLY_VERIFIED' if verification_roll > 0.3 else 'UNVERIFIED')
 
+        email_prefix = random.choice(['contact', 'info', 'sales', 'corporate', 'enquiry'])
+        clean_comp_name = re.sub(r'[^a-zA-Z0-9]', '', name).lower()[:12]
+        comp_domain = domain if domain else f"{clean_comp_name}mfg.co.in"
+        company_email = f"{email_prefix}@{comp_domain}"
+        company_phone = f"+91 {random.choice(['20', '22', '80', '44', '11', '79', '124', '40'])}{random.randint(21000000, 89999999)}"
+
         company = {
             'id': company_id,
             'company_name': name,
             'normalized_name': normalize_name(name),
+            'email': company_email,
+            'phone': company_phone,
             'website': website,
             'domain': domain,
             'establishment_year': year,
@@ -703,6 +711,7 @@ def seed_database(db_path):
             fac_name = f"{name} - {city_name} Unit {f_idx + 1} ({descriptor})" if facility_count > 1 else f"{name} ({descriptor})"
 
             plot_num = random.randint(1, 450)
+            fac_city_slug = re.sub(r'[^a-zA-Z0-9]', '', city_name).lower()
             facility = {
                 'id': str(uuid.uuid4()),
                 'company_id': company_id,
@@ -717,6 +726,7 @@ def seed_database(db_path):
                 'longitude': fac_lng,
                 'google_place_id': f"ChIJ{hashlib.md5((company_id + str(f_idx)).encode()).hexdigest()[:20]}",
                 'google_maps_url': f"https://maps.google.com/?q={fac_lat},{fac_lng}",
+                'email': f"plant.{fac_city_slug}@{comp_domain}",
                 'phone': f"+91 {random.randint(70,99)}{random.randint(10000000,99999999)}",
                 'google_rating': round(random.uniform(3.7, 4.9), 1) if random.random() > 0.3 else None,
                 'review_count': random.randint(10, 480) if random.random() > 0.3 else None,
@@ -727,13 +737,13 @@ def seed_database(db_path):
     # ── Insert companies ──
     for c in companies:
         cursor.execute("""
-            INSERT INTO companies (id, company_name, normalized_name, website, domain,
+            INSERT INTO companies (id, company_name, normalized_name, email, phone, website, domain,
                 establishment_year, headquarters_city, headquarters_state,
                 industry, sub_industry, employee_count, employee_count_estimated,
                 estimated_revenue, company_scale, scale_score, company_description,
                 verification_status, is_exporter, is_public_company)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (c['id'], c['company_name'], c['normalized_name'], c['website'], c['domain'],
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (c['id'], c['company_name'], c['normalized_name'], c['email'], c['phone'], c['website'], c['domain'],
               c['establishment_year'], c['headquarters_city'], c['headquarters_state'],
               c['industry'], c['sub_industry'], c['employee_count'], c['employee_count_estimated'],
               c['estimated_revenue'], c['company_scale'], c['scale_score'], c['company_description'],
@@ -747,12 +757,12 @@ def seed_database(db_path):
             INSERT INTO facilities (id, company_id, facility_name, facility_type,
                 address, city, state, district, pincode,
                 latitude, longitude, google_place_id, google_maps_url,
-                phone, google_rating, review_count, operational_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                email, phone, google_rating, review_count, operational_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (f['id'], f['company_id'], f['facility_name'], f['facility_type'],
               f['address'], f['city'], f['state'], f['district'], f['pincode'],
               f['latitude'], f['longitude'], f['google_place_id'], f['google_maps_url'],
-              f['phone'], f['google_rating'], f['review_count'], f['operational_status']))
+              f['email'], f['phone'], f['google_rating'], f['review_count'], f['operational_status']))
 
     print(f"[OK] {len(facilities)} facilities inserted")
 
